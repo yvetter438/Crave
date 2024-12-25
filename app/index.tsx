@@ -1,6 +1,7 @@
-import { Text, View, TextInput, StyleSheet, Dimensions, Pressable, KeyboardAvoidingView, Platform, TouchableWithoutFeedback, Keyboard } from "react-native";
+import { Text, View, TextInput, StyleSheet, Dimensions, Pressable, KeyboardAvoidingView, Platform, TouchableWithoutFeedback, Keyboard, Alert } from "react-native";
 import { Link, useRouter } from 'expo-router';
 import React, { useState } from 'react';
+import { supabase } from '../lib/supabase';
 import Svg, { Image, Ellipse, ClipPath } from 'react-native-svg';
 import Animated, { 
     useSharedValue,
@@ -20,6 +21,12 @@ export default function Index() {
   const formButtonScale = useSharedValue(1);
   const [isRegistering, setIsRegistering] = useState(false);
   const router = useRouter();
+
+  //supabase logic
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [loading, setLoading] = useState(false);
+
 
   const imageAnimatedStyle = useAnimatedStyle(() => {
     const interpolation = interpolate(imagePosition.value, [0, 1], [-height / 2, 0])
@@ -58,12 +65,49 @@ export default function Index() {
     }
   })
 
+  async function signInWithEmail() {
+    setLoading(true);
+    const { error } = await supabase.auth.signInWithPassword({
+      email: email,
+      password: password,
+    });
+
+    if (error) {
+      Alert.alert(error.message);
+    } else {
+      formButtonScale.value = withSequence(withSpring(1.5), withSpring(1));
+      setTimeout(() => {
+        router.push('./(tabs)');
+      }, 800);
+    }
+    setLoading(false);
+  }
+  async function signUpWithEmail() {
+    setLoading(true);
+    const {
+      data: { session },
+      error,
+    } = await supabase.auth.signUp({
+      email: email,
+      password: password,
+    });
+
+    if (error) {
+      Alert.alert(error.message);
+    } else if (!session) {
+      Alert.alert('Please check your inbox for email verification!');
+    }
+    setLoading(false);
+  }
+
+
+
   const loginHandler = () => {
     imagePosition.value = 0;
     if (isRegistering) {
       setIsRegistering(false);
       runOnJS(setIsRegistering)(false);
-    }
+    } 
 
     // setTimeout(() => {
     //   router.push('./auth/authIndex');
@@ -123,7 +167,10 @@ export default function Index() {
           <TextInput 
             placeholder="Email" 
             placeholderTextColor="black" 
-            style={styles.textInput} 
+            style={styles.textInput}
+            onChangeText={(text) => setEmail(text)}
+            value={email}
+            autoCapitalize="none"
           />
           {isRegistering && (
           <TextInput 
@@ -136,14 +183,21 @@ export default function Index() {
             placeholder="Password"  
             placeholderTextColor="black" 
             style={styles.textInput}
+            onChangeText={(text) => setPassword(text)}
+            value={password}
+            secureTextEntry={true}
+            autoCapitalize="none"
           />
           <Animated.View style={[styles.formButton, formButtonAnimatedStyle]}>
             <Pressable 
-              onPress={() => {formButtonScale.value = withSequence(withSpring(1.5), withSpring(1));
-               setTimeout(() => {
-                 router.push('./(tabs)');
-               }, 800);
-            }}>
+              onPress={() => {
+                formButtonScale.value = withSequence(withSpring(1.5), withSpring(1));
+                if (isRegistering) {
+                  signUpWithEmail();
+                } else {
+                  signInWithEmail();
+                }
+              }}>
               <Text style={styles.buttonText}>{isRegistering ? 'REGISTER' : 'LOG IN'}</Text>
             </Pressable>
           </Animated.View>
