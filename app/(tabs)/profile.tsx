@@ -1,7 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, Image, StyleSheet, FlatList, Dimensions, Modal, TouchableOpacity } from 'react-native';
 import { Video } from 'expo-av';
 import * as ImagePicker from 'expo-image-picker';
+import { supabase } from '../../lib/supabase';
+import { Session } from '@supabase/supabase-js';
 
 const posts = [
   { id: '1', uri: 'https://notjustdev-dummy.s3.us-east-2.amazonaws.com/vertical-videos/2.mp4' },
@@ -13,6 +15,21 @@ const posts = [
 export default function Profile() {
   const [modalVisible, setModalVisible] = useState(false);
   const [image, setImage] = useState('https://notjustdev-dummy.s3.us-east-2.amazonaws.com/images/1.jpg');
+  const [session, setSession] = useState<Session | null>(null);
+
+  useEffect(() => {
+    // Get initial session
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session);
+    });
+
+    // Listen for auth changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setSession(session);
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
 
   const pickImage = async () => {
     let result = await ImagePicker.launchImageLibraryAsync({
@@ -33,7 +50,9 @@ export default function Profile() {
       <TouchableOpacity onPress={() => setModalVisible(true)}>
         <Image source={{ uri: image }} style={styles.profileImage} />
       </TouchableOpacity>
-      <Text style={styles.username}>username</Text>
+      <Text style={styles.username}>
+        {session?.user?.email || 'Not logged in'}
+      </Text>
 
       <View style={styles.statsContainer}>
         <View style={styles.stats}>
