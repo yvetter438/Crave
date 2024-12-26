@@ -247,7 +247,7 @@ const styles = StyleSheet.create({
     paddingLeft: 10,
   },
   formButton: {
-    backgroundColor: 'rgba(123, 104, 238, 0.8)',
+    backgroundColor: 'rgba(255, 0, 0, 0.8)',
     height: 55,
     alignItems: 'center',
     justifyContent: 'center',
