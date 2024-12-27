@@ -1,10 +1,18 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, Image, StyleSheet, FlatList, Dimensions, Modal, TouchableOpacity } from 'react-native';
+import { View, Text, Image, StyleSheet, FlatList, Dimensions, Modal, TouchableOpacity, Alert } from 'react-native';
 import { Video } from 'expo-av';
 import * as ImagePicker from 'expo-image-picker';
 import { supabase } from '../../lib/supabase';
 import { Session } from '@supabase/supabase-js';
 
+//post type
+interface Post {
+  id: number;
+  created_at: string;
+  video_url: string;
+  description: string;
+  recipe: string;
+}
 const posts = [
   { id: '1', uri: 'https://notjustdev-dummy.s3.us-east-2.amazonaws.com/vertical-videos/2.mp4' },
   { id: '2', uri: 'https://notjustdev-dummy.s3.us-east-2.amazonaws.com/vertical-videos/1.mp4' },
@@ -16,20 +24,79 @@ export default function Profile() {
   const [modalVisible, setModalVisible] = useState(false);
   const [image, setImage] = useState('https://notjustdev-dummy.s3.us-east-2.amazonaws.com/images/1.jpg');
   const [session, setSession] = useState<Session | null>(null);
+  const [posts, setPosts] = useState<Post[]>([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     // Get initial session
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
+      if (session?.user) {
+        console.log('Session user ID:', session.user.id);
+      console.log('ID match:', session.user.id === 'cdc73b26-3030-42aa-9745-3e9254add7bf');
+        fetchUserPosts(session.user.id);
+      }
     });
 
     // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setSession(session);
+      if (session?.user) {
+        fetchUserPosts(session.user.id);
+      }
     });
 
     return () => subscription.unsubscribe();
   }, []);
+
+  const fetchUserPosts = async (userId: string) => {
+    try {  
+      console.log('Fetching posts for user:', userId) //debug log
+      
+      // First try to get all posts
+      const { data: allPosts, error: allPostsError } = await supabase
+        .from('posts')
+        .select('*');
+      
+      console.log('All posts:', allPosts) //debug log
+  
+      // Then try with the user filter
+      const { data, error } = await supabase
+        .from('posts')
+        .select('*')
+        .eq('user', userId)
+        .order('created_at', { ascending: false });
+  
+      if (error) {
+        console.error('Supabase error:', error) //debug log
+        throw error;
+      }
+  
+      if (data) {
+        console.log('Filtered posts:', data) //debug log
+        setPosts(data);
+      }
+    } catch (error) {
+      Alert.alert('Error fetching posts');
+      console.error('Error fetching posts:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const renderPost = ({ item }: { item: Post }) => (
+    <View style={styles.postContainer}>
+      <Video
+        source={{ uri: item.video_url }}
+        style={styles.postThumbnail}
+        resizeMode="cover"
+        shouldPlay={false}
+        isLooping
+      />
+      
+    </View>
+  );
+
 
   const pickImage = async () => {
     let result = await ImagePicker.launchImageLibraryAsync({
@@ -71,19 +138,13 @@ export default function Profile() {
 
       <FlatList
         data={posts}
-        renderItem={({ item }) => (
-          <Video
-            source={{ uri: item.uri }}
-            style={styles.postThumbnail}
-            resizeMode="cover"
-            isLooping
-            shouldPlay={false}
-          />
-        )}
+        renderItem={renderPost}
         keyExtractor={(item) => item.id}
         numColumns={3}
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.postsContainer}
+        refreshing={loading}
+        onRefresh={() => session?.user && fetchUserPosts(session.user.id)}
       />
 
       <Modal
