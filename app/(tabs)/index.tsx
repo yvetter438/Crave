@@ -1,6 +1,10 @@
 import VideoPost from '@/components/VideoPost';
 import { View,  StyleSheet, FlatList  } from 'react-native';
 import { useState, useRef, useEffect } from 'react';
+import { GestureHandlerRootView, Gesture, GestureDetector } from 'react-native-gesture-handler';
+import { router } from 'expo-router';
+import { supabase } from '../../lib/supabase';
+import { runOnJS } from 'react-native-reanimated';
 
 
 const dummyPosts = [{
@@ -63,21 +67,36 @@ export default function Tab() {
     },
   ]);
 
+  const swipeGesture = Gesture.Pan()
+    .activeOffsetX(50) // Start detecting after 50px horizontal movement
+    .onEnd((event) => {
+      console.log('Swipe event:', event) //debug log
+      if (event.velocityX > 500) { // Swipe right with good velocity
+        runOnJS(router.push)('/(tabs)/recipe');
+      }
+    });
+
+
+
+
+
   return (
-    
-    <View style={styles.container}>
-      <FlatList
-      data={posts} 
-      renderItem={({ item }) => <VideoPost post={item} activePostId={activePostId} />}
-      keyExtractor={(item, index) => `${item.id}-${index}`}
-      pagingEnabled
-      viewabilityConfigCallbackPairs={viewabilityConfigCallbackPairs.current}
-      showsVerticalScrollIndicator={false}
-      onEndReached={onEndReached}
-      onEndReachedThreshold={1}
-    />
-    </View>
-    
+    <GestureHandlerRootView style={{ flex: 1}}>
+      <GestureDetector gesture={swipeGesture}>
+      <View style={styles.container}>
+        <FlatList
+        data={posts} 
+        renderItem={({ item }) => <VideoPost post={item} activePostId={activePostId} />}
+        keyExtractor={(item, index) => `${item.id}-${index}`}
+        pagingEnabled
+        viewabilityConfigCallbackPairs={viewabilityConfigCallbackPairs.current}
+        showsVerticalScrollIndicator={false}
+        onEndReached={onEndReached}
+        onEndReachedThreshold={1}
+      />
+      </View>
+      </GestureDetector>
+    </GestureHandlerRootView>
   );
 };
 

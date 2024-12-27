@@ -13,6 +13,7 @@ import Animated, {
     withSequence,
     withSpring,
     } from 'react-native-reanimated';
+import { GestureHandlerRootView } from "react-native-gesture-handler";
 
 
 export default function Index() {

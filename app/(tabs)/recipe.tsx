@@ -28,6 +28,57 @@ const recipes = [
       'Combine the pasta and chicken with the sauce, and serve hot.',
     ],
   },
+  {
+    id: '3',
+    title: 'Meat Loaf',
+    description: 'Meat in form of a catloaf',
+    ingredients: ['Ground Beef', 'Breadcrumbs', 'Garlic', 'Sale', 'Pepper'],
+    instructions: [
+      'lerem ipsum deez nuts',
+      'chachi chachi chachi',
+      'skibidi toilet',
+      'ligma sigma kigma',
+      'genuine potatoe chips',
+    ],
+  },
+  {
+    id: '4',
+    title: 'Hamburger Soup',
+    description: 'Your favorite american dish but in a soup',
+    ingredients: ['hamburger', 'lettuce', 'tomamtoe', 'ketchup', 'mustard'],
+    instructions: [
+      'Dice that shi up',
+      'skibidi toilet rizz',
+      'ketchup',
+      'squirt that sauce all over',
+      'chachi chachi chachi',
+    ],
+  },
+  {
+    id: '5',
+    title: 'Tater Tot Hotdish',
+    description: 'Slice of the midwest but wit no deli',
+    ingredients: ['Yeet', 'Ye ye', 'potatoes', 'Heavy Cream', 'thicness'],
+    instructions: [
+      'Lemme see dat boi',
+      'lay up like ratatouille',
+      'gawk gawk gawk',
+    ],
+  },
+  {
+    id: '6',
+    title: 'Lebrons Meat',
+    description: 'The goat of all basketball and his shenanigans',
+    ingredients: ['meow', 'Lebronhenessy', 'seasoning', 'Kool aid'],
+    instructions: [
+      'sample it',
+      'let it rip',
+      'wing ling ling',
+      'ching ching ching',
+      'kaching kaching kaching',
+    ],
+  },
+
   // Add more recipes as needed
 ];
 
