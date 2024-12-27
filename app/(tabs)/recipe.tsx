@@ -1,5 +1,17 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { View, Text, FlatList, Dimensions, StyleSheet, ScrollView } from 'react-native';
+import { useLocalSearchParams } from 'expo-router';
+
+
+interface Recipe {
+  id: string;
+  title: string;
+  description: string;
+  ingredients: string[];
+  instructions: string[];
+}
+
+
 
 const recipes = [
   {
@@ -82,10 +94,22 @@ const recipes = [
   // Add more recipes as needed
 ];
 
+
+
+
+
 const RecipeScreen = () => {
   const { width, height } = Dimensions.get('window');
+  const { id } = useLocalSearchParams(); /// access the recipe ID passed to the screen
+  console.log('Reveived ID:', id); //debug log
+  const recipe = recipes.find(r => r.id === id); // Find the corresponding recipe
 
-  const renderItem = ({ item }: { item: any }) => (
+  if (!recipe) {
+    return <Text>Recipe not found.</Text>; // Handle case where recipe is not found
+  }
+
+
+  {/*const renderItem = ({ item }: { item: Recipe }) => (
     <ScrollView style={[styles.recipeContainer, { width, height }]}>
       <Text style={styles.title}>{item.title}</Text>
       <Text style={styles.description}>{item.description}</Text>
@@ -107,16 +131,28 @@ const RecipeScreen = () => {
       </View>
     </ScrollView>
   );
-
+*/}
   return (
-    <FlatList
-      data={recipes}
-      renderItem={renderItem}
-      keyExtractor={(item) => item.id}
-      horizontal
-      pagingEnabled
-      showsHorizontalScrollIndicator={false}
-    />
+    <ScrollView style={[styles.recipeContainer, { width, height }]}>
+      <Text style={styles.title}>{recipe.title}</Text>
+      <Text style={styles.description}>{recipe.description}</Text>
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>Ingredients</Text>
+        {recipe.ingredients.map((ingredient: string, index: number) => (
+          <Text key={index} style={styles.ingredient}>
+            - {ingredient}
+          </Text>
+        ))}
+      </View>
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>Instructions</Text>
+        {recipe.instructions.map((instruction: string, index: number) => (
+          <Text key={index} style={styles.instruction}>
+            {index + 1}. {instruction}
+          </Text>
+        ))}
+      </View>
+    </ScrollView>
   );
 };
 
@@ -155,3 +191,15 @@ const styles = StyleSheet.create({
 });
 
 export default RecipeScreen;
+
+//old code
+
+//<FlatList
+  //    data={filteredRecipes}
+    //  renderItem={renderItem}
+      //keyExtractor={(item) => item.id}
+   //   horizontal
+   //   pagingEnabled
+   //   showsHorizontalScrollIndicator={false}
+   //   initialScrollIndex={filteredRecipes.findIndex(recipe => recipe.id === id)}  // set the initial position based on ID
+  //  />
