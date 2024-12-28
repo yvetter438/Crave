@@ -6,47 +6,12 @@ import { router } from 'expo-router';
 import { supabase } from '../../lib/supabase';
 import { runOnJS } from 'react-native-reanimated';
 
-/*
-const dummyPosts = [{
-  id: '2',
-  video_url: 'https://notjustdev-dummy.s3.us-east-2.amazonaws.com/vertical-videos/2.mp4',
-  description: "Timelapse of city"
-
-},
-{
-  id: '1',
-  video_url: 'https://notjustdev-dummy.s3.us-east-2.amazonaws.com/vertical-videos/1.mp4',
-  description: "Hey There"
-
-},
-{
-  id: '3',
-  video_url: 'https://notjustdev-dummy.s3.us-east-2.amazonaws.com/vertical-videos/3.mp4',
-  description: "Holla"
-
-},
-{
-  id: '4',
-  video_url: 'https://notjustdev-dummy.s3.us-east-2.amazonaws.com/vertical-videos/4.mp4',
-  caption_description: "Piano practice"
-
-},
-{
-  id: '5',
-  video_url: 'https://notjustdev-dummy.s3.us-east-2.amazonaws.com/vertical-videos/5.mp4',
-  description: "Post number 5"
-
-},
-];
-*/
 
 export default function Tab() {
   const [activePostId, setActivePostId] = useState<string | undefined>(undefined);
   const [posts, setPosts] = useState([]);
 
   
-
-
   useEffect(() => {
     const fetchPosts = async () => {
       try {
@@ -134,9 +99,6 @@ export default function Tab() {
         runOnJS(router.push)(`/(tabs)/recipe?id=${activePostId}`);
       }
     });
-
-
-
 
 
   return (
