@@ -11,11 +11,12 @@ import { useEffect } from 'react';
 type VideoPost = {
     post: {
         id: string;
-        video: string;
-        caption: string;
+        video_url: string;
+        description: string;
     };
     activePostId: string;
 };
+
 
 export default function VideoPost({post, activePostId }: VideoPost) {
   const video = useRef<Video>(null);
@@ -54,7 +55,7 @@ export default function VideoPost({post, activePostId }: VideoPost) {
     <View style={[styles.container, {height: adjustedHeight}]}>
       <Video 
         ref={video}
-        source= {{uri: post.video }}
+        source= {{uri: post.video_url }}
         style={[StyleSheet.absoluteFill, styles.video]}
         resizeMode={ResizeMode.COVER}
         onPlaybackStatusUpdate={setStatus}
@@ -74,7 +75,7 @@ export default function VideoPost({post, activePostId }: VideoPost) {
          <View style={styles.footer}>
           {/* bottom: caption */}
           <View style={styles.leftColumn}>
-            <Text style={styles.caption}>{post.caption}</Text>
+            <Text style={styles.caption}>{post.description}</Text>
           </View>
 
           {/* Vertical column of icon-buttons.*/}
