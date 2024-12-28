@@ -13,12 +13,7 @@ interface Post {
   description: string;
   recipe: string;
 }
-const posts = [
-  { id: '1', uri: 'https://notjustdev-dummy.s3.us-east-2.amazonaws.com/vertical-videos/2.mp4' },
-  { id: '2', uri: 'https://notjustdev-dummy.s3.us-east-2.amazonaws.com/vertical-videos/1.mp4' },
-  { id: '3', uri: 'https://notjustdev-dummy.s3.us-east-2.amazonaws.com/vertical-videos/3.mp4' },
-  // Add more videos as needed
-];
+
 
 export default function Profile() {
   const [modalVisible, setModalVisible] = useState(false);
