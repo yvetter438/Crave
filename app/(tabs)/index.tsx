@@ -6,7 +6,7 @@ import { router } from 'expo-router';
 import { supabase } from '../../lib/supabase';
 import { runOnJS } from 'react-native-reanimated';
 
-
+/*
 const dummyPosts = [{
   id: '2',
   video_url: 'https://notjustdev-dummy.s3.us-east-2.amazonaws.com/vertical-videos/2.mp4',
@@ -38,27 +38,82 @@ const dummyPosts = [{
 
 },
 ];
-
+*/
 
 export default function Tab() {
-  const [activePostId, setActivePostId] = useState(dummyPosts[0].id);
-  const [posts, setPosts] = useState<typeof dummyPosts>([]);
+  const [activePostId, setActivePostId] = useState<string | undefined>(undefined);
+  const [posts, setPosts] = useState([]);
 
   
 
 
   useEffect(() => {
     const fetchPosts = async () => {
-      // fetch posts from the server
-      setPosts(dummyPosts);
+      try {
+        // Fetch data from the Supabase table
+        const { data, error } = await supabase
+          .from('posts') // Replace 'videos' with the name of your Supabase table
+          .select('id, video_url, description');
+  
+        if (error) {
+          console.error('Error fetching posts:', error);
+          return;
+        }
+  
+        // Convert id to string and map the data into the desired format
+        const formattedData = data.map((item) => ({
+          id: item.id.toString(),
+          video_url: item.video_url,
+          description: item.description,
+        }));
+  
+        // Update the state with fetched posts
+        setPosts(formattedData);
+
+        //set the first post as active if available
+        if (formattedData.length > 0) {
+          setActivePostId(formattedData[0].id);
+        }
+      } catch (err) {
+        console.error('Unexpected error fetching posts:', err);
+      }
     };
+  
     fetchPosts();
   }, []);
+  
 
-  const onEndReached = () => {
-    //fetch more posts from database
-    setPosts((currentPosts) => [...currentPosts, ...dummyPosts]);
+  const onEndReached = async () => {
+    try {
+      // Fetch the next batch of posts
+      const { data, error } = await supabase
+        .from('posts')
+        .select('id, video_url, description')
+        .range(posts.length, posts.length + 10); // Fetch next 10 posts
+  
+      if (error) {
+        console.error('Error fetching more posts:', error);
+        return;
+      }
+  
+      if (data.length === 0) {
+        // No more posts available, loop back to the first set of posts
+        setPosts((currentPosts) => [...currentPosts, ...currentPosts.slice(0, 10)]);
+      } else {
+        // Append fetched posts to the current list
+        const additionalPosts = data.map((item) => ({
+          id: item.id.toString(),
+          video_url: item.video_url,
+          description: item.description,
+        }));
+  
+        setPosts((currentPosts) => [...currentPosts, ...additionalPosts]);
+      }
+    } catch (err) {
+      console.error('Unexpected error fetching more posts:', err);
+    }
   };
+  
 
   const viewabilityConfigCallbackPairs = useRef([
       {
