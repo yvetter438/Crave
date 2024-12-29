@@ -21,6 +21,7 @@ export default function Profile() {
   const [session, setSession] = useState<Session | null>(null);
   const [posts, setPosts] = useState<Post[]>([]);
   const [loading, setLoading] = useState(true);
+  const [ postCount, setPostCount] = useState(0);
 
   useEffect(() => {
     // Get initial session
@@ -70,6 +71,7 @@ export default function Profile() {
       if (data) {
         console.log('Filtered posts:', data) //debug log
         setPosts(data);
+        setPostCount(data.length); //counts the number of posts
       }
     } catch (error) {
       Alert.alert('Error fetching posts');
@@ -118,7 +120,7 @@ export default function Profile() {
 
       <View style={styles.statsContainer}>
         <View style={styles.stats}>
-          <Text style={styles.statNumber}>50</Text>
+          <Text style={styles.statNumber}>{postCount}</Text>
           <Text style={styles.statLabel}>Posts</Text>
         </View>
         <View style={styles.stats}>
