@@ -211,7 +211,7 @@ const styles = StyleSheet.create({
     color: '#888',
   },
   postsContainer: {
-    paddingHorizontal: 2,
+    paddingHorizontal: 0,
     marginTop: screenHeight * 0.05,
   },
   postThumbnail: {
