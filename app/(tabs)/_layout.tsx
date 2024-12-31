@@ -21,20 +21,8 @@ export default function TabLayout() {
           tabBarIcon: ({ color }) => <FontAwesome size={28} name="home" color={color} />,
         }}
       />
-      <Tabs.Screen
-        name="search"
-        options={{
-          title: 'Search',
-          tabBarIcon: ({ color }) => <FontAwesome size={28} name="search" color={color} />,
-        }}
-      />
-      <Tabs.Screen
-        name="upload"
-        options={{
-          title: 'Upload',
-          tabBarIcon: ({ color }) => <FontAwesome size={28} name="plus-square-o" color={color} />,
-        }}
-      />
+      
+      
       <Tabs.Screen
         name="profile"
         options={{
@@ -46,3 +34,24 @@ export default function TabLayout() {
     </ActivePostProvider>
   );
 }
+
+
+
+/*
+<Tabs.Screen
+        name="search"
+        options={{
+          title: 'Search',
+          tabBarIcon: ({ color }) => <FontAwesome size={28} name="search" color={color} />,
+        }}
+      />
+
+
+<Tabs.Screen
+        name="upload"
+        options={{
+          title: 'Upload',
+          tabBarIcon: ({ color }) => <FontAwesome size={28} name="plus-square-o" color={color} />,
+        }}
+      />
+*/
