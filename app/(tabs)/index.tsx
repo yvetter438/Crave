@@ -54,7 +54,7 @@ export default function Tab() {
         //set the first post as active if available
         if (formattedData.length > 0) {
           setActivePostId(formattedData[0].id);
-          console.log('Initial activePostId set to:', formattedData[0].id); // Log initial activePostId
+        //  console.log('Initial activePostId set to:', formattedData[0].id); // Log initial activePostId
         }
       } catch (err) {
         console.error('Unexpected error fetching posts:', err);
@@ -114,8 +114,8 @@ export default function Tab() {
         viewabilityConfig: { itemVisiblePercentThreshold: 50 },
       onViewableItemsChanged: ({ changed, viewableItems }) => {
         if (viewableItems.length > 0 && viewableItems[0].isViewable) {
-          console.log('Previous activePostId:', activePostId); // Log previous activePostId
-          console.log('New activePostId:', viewableItems[0].item.id); // Log new activePostId
+        //  console.log('Previous activePostId:', activePostId); // Log previous activePostId
+        //  console.log('New activePostId:', viewableItems[0].item.id); // Log new activePostId
           setActivePostId(viewableItems[0].item.id); 
         }
       },

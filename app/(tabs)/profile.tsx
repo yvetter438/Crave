@@ -28,8 +28,8 @@ export default function Profile() {
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
       if (session?.user) {
-        console.log('Session user ID:', session.user.id);
-      console.log('ID match:', session.user.id === 'cdc73b26-3030-42aa-9745-3e9254add7bf');
+      //  console.log('Session user ID:', session.user.id);
+     // console.log('ID match:', session.user.id === 'cdc73b26-3030-42aa-9745-3e9254add7bf');
         fetchUserPosts(session.user.id);
       }
     });
@@ -47,14 +47,14 @@ export default function Profile() {
 
   const fetchUserPosts = async (userId: string) => {
     try {  
-      console.log('Fetching posts for user:', userId) //debug log
+    //  console.log('Fetching posts for user:', userId) //debug log
       
       // First try to get all posts
       const { data: allPosts, error: allPostsError } = await supabase
         .from('posts')
         .select('*');
       
-      console.log('All posts:', allPosts) //debug log
+    //  console.log('All posts:', allPosts) //debug log
   
       // Then try with the user filter
       const { data, error } = await supabase
@@ -69,7 +69,7 @@ export default function Profile() {
       }
   
       if (data) {
-        console.log('Filtered posts:', data) //debug log
+      //  console.log('Filtered posts:', data) //debug log
         setPosts(data);
         setPostCount(data.length); //counts the number of posts
       }

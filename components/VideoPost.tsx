@@ -27,7 +27,6 @@ export default function VideoPost({post, activePostId, shouldPlay }: VideoPost) 
   const tabBarHeight: number = useBottomTabBarHeight();
   const adjustedHeight: number = height - tabBarHeight;
 
-
   useEffect(() => {
     if (!video.current) {
       return;
@@ -59,16 +58,12 @@ export default function VideoPost({post, activePostId, shouldPlay }: VideoPost) 
     };
   }, []); // Empty dependency array to run only on mount/unmount
 
-
-
-
-
   useEffect(() => {
     if (!video.current) {
         return;
     }
     if (activePostId != post.id) {
-        video.current.stopAsync();
+        video.current.pauseAsync();
     }
     if (activePostId == post.id) {
         video.current.playAsync();
@@ -96,6 +91,8 @@ export default function VideoPost({post, activePostId, shouldPlay }: VideoPost) 
         resizeMode={ResizeMode.COVER}
         onPlaybackStatusUpdate={setStatus}
         isLooping
+        isMuted={false}
+        volume={1.0}
          />
 
        <Pressable onPress={onPress} style={styles.content}>
@@ -113,8 +110,8 @@ export default function VideoPost({post, activePostId, shouldPlay }: VideoPost) 
           <View style={styles.leftColumn}>
             <Text style={styles.caption}>{post.description}</Text>
           </View>
-          {/*
-          {/* Vertical column of icon-buttons.
+          
+          {/* Vertical column of icon-buttons. 
           <View style={styles.rightColumn}>
             <Ionicons name='heart' size={40} color="white" />
             <Ionicons name='share-social-sharp' size={40} color="white" />

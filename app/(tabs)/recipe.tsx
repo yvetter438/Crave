@@ -21,13 +21,13 @@ const RecipeScreen = () => {
   const { activePostId } = useActivePost();
 
 
-  console.log('Active Post ID on Recipe Screen:', activePostId);// Add this console log to debug
-  console.log('Recipe Screen - Current activePostId:', activePostId);
+ // console.log('Active Post ID on Recipe Screen:', activePostId);// Add this console log to debug
+ // console.log('Recipe Screen - Current activePostId:', activePostId);
   useEffect(() => {
     const fetchRecipe = async () => {
       try {
         setLoading(true);
-        console.log('Fetching recipe for ID:', activePostId);
+      //  console.log('Fetching recipe for ID:', activePostId);
         const recipeId = String(activePostId);
         // Fetch recipe data based on the post's recipe_id
         const { data, error } = await supabase
