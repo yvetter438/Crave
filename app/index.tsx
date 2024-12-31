@@ -14,6 +14,7 @@ import Animated, {
     withSpring,
     } from 'react-native-reanimated';
 import { GestureHandlerRootView } from "react-native-gesture-handler";
+import { ActivePostProvider } from '@/context/ActivePostContext';
 
 
 export default function Index() {
@@ -207,7 +208,6 @@ export default function Index() {
     </Animated.View>
     </TouchableWithoutFeedback>
     </KeyboardAvoidingView>
-    
   );
 }
 

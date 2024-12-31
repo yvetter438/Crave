@@ -5,10 +5,11 @@ import { GestureHandlerRootView, Gesture, GestureDetector } from 'react-native-g
 import { router } from 'expo-router';
 import { supabase } from '../../lib/supabase';
 import { runOnJS } from 'react-native-reanimated';
+import { useActivePost } from '@/context/ActivePostContext';
 
 
 export default function Tab() {
-  const [activePostId, setActivePostId] = useState<string | undefined>(undefined);
+  const { activePostId, setActivePostId}  = useActivePost();
   const [posts, setPosts] = useState([]);
 
   
@@ -38,6 +39,7 @@ export default function Tab() {
         //set the first post as active if available
         if (formattedData.length > 0) {
           setActivePostId(formattedData[0].id);
+          console.log('Initial activePostId set to:', formattedData[0].id); // Log initial activePostId
         }
       } catch (err) {
         console.error('Unexpected error fetching posts:', err);
@@ -85,6 +87,8 @@ export default function Tab() {
         viewabilityConfig: { itemVisiblePercentThreshold: 50 },
       onViewableItemsChanged: ({ changed, viewableItems }) => {
         if (viewableItems.length > 0 && viewableItems[0].isViewable) {
+          console.log('Previous activePostId:', activePostId); // Log previous activePostId
+          console.log('New activePostId:', viewableItems[0].item.id); // Log new activePostId
           setActivePostId(viewableItems[0].item.id); 
         }
       },

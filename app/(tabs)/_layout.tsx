@@ -1,8 +1,10 @@
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 import { Tabs } from 'expo-router';
+import { ActivePostProvider } from '@/context/ActivePostContext';
 
 export default function TabLayout() {
   return (
+    <ActivePostProvider>
     <Tabs screenOptions={{ tabBarActiveTintColor: 'blue' }}>
       <Tabs.Screen
         name="recipe"
@@ -41,5 +43,6 @@ export default function TabLayout() {
         }}
       />
     </Tabs>
+    </ActivePostProvider>
   );
 }

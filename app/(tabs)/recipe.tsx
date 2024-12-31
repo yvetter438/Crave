@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { View, Text, FlatList, Dimensions, StyleSheet, ScrollView } from 'react-native';
 import { useLocalSearchParams } from 'expo-router';
 import { supabase } from '../../lib/supabase';
+import { useActivePost } from '@/context/ActivePostContext';
 
 interface Recipe {
   id: string;
@@ -12,19 +13,22 @@ interface Recipe {
 }
 
 
-
 const RecipeScreen = () => {
   const { width, height } = Dimensions.get('window');
   const { id } = useLocalSearchParams(); /// access the recipe ID passed to the screen
   const [recipe, setRecipe] = useState<Recipe | null>(null);
   const [loading, setLoading]= useState(true);
-  
+  const { activePostId } = useActivePost();
 
 
+  console.log('Active Post ID on Recipe Screen:', activePostId);// Add this console log to debug
+  console.log('Recipe Screen - Current activePostId:', activePostId);
   useEffect(() => {
     const fetchRecipe = async () => {
       try {
-        const recipeId = String(id);
+        setLoading(true);
+        console.log('Fetching recipe for ID:', activePostId);
+        const recipeId = String(activePostId);
         // Fetch recipe data based on the post's recipe_id
         const { data, error } = await supabase
           .from('recipes')
@@ -53,7 +57,7 @@ const RecipeScreen = () => {
     };
 
     fetchRecipe();
-  }, [id]);
+  }, [id, activePostId]);
 
   if (loading) {
     return <Text>Loading...</Text>;
