@@ -1,16 +1,31 @@
 import VideoPost from '@/components/VideoPost';
 import { View,  StyleSheet, FlatList  } from 'react-native';
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import { GestureHandlerRootView, Gesture, GestureDetector } from 'react-native-gesture-handler';
 import { router } from 'expo-router';
 import { supabase } from '../../lib/supabase';
 import { runOnJS } from 'react-native-reanimated';
 import { useActivePost } from '@/context/ActivePostContext';
-
+import { useFocusEffect } from '@react-navigation/native';
 
 export default function Tab() {
   const { activePostId, setActivePostId}  = useActivePost();
   const [posts, setPosts] = useState([]);
+  const [isAppActive, setIsAppActive] = useState(true);
+  const [isFocused, setIsFocused] = useState(true);
+
+  const shouldPlay = isFocused && isAppActive;
+
+  useFocusEffect(
+    useCallback(() => {
+      setIsFocused(true);
+      
+      return () => {
+        setIsFocused(false);
+      };
+    }, [])
+  );
+
 
   
   useEffect(() => {
@@ -123,7 +138,7 @@ export default function Tab() {
       <View style={styles.container}>
         <FlatList
         data={posts} 
-        renderItem={({ item }) => <VideoPost post={item} activePostId={activePostId} />}
+        renderItem={({ item }) => <VideoPost post={item} activePostId={activePostId} shouldPlay={shouldPlay}/>}
         keyExtractor={(item, index) => `${item.id}-${index}`}
         pagingEnabled
         viewabilityConfigCallbackPairs={viewabilityConfigCallbackPairs.current}

@@ -15,16 +15,36 @@ type VideoPost = {
         description: string;
     };
     activePostId: string;
+    shouldPlay: boolean;
 };
 
 
-export default function VideoPost({post, activePostId }: VideoPost) {
+export default function VideoPost({post, activePostId, shouldPlay }: VideoPost) {
   const video = useRef<Video>(null);
   const [status, setStatus] = useState<AVPlaybackStatus>();
   const isPlaying = status?.isLoaded && status.isPlaying;
   const { height }= useWindowDimensions();
   const tabBarHeight: number = useBottomTabBarHeight();
   const adjustedHeight: number = height - tabBarHeight;
+
+
+  useEffect(() => {
+    if (!video.current) {
+      return;
+    }
+
+    const isActivePost = activePostId === post.id;
+
+    if (isActivePost && shouldPlay) {
+      video.current.playAsync();
+    } else {
+      video.current.pauseAsync();
+    }
+  }, [activePostId, post.id, shouldPlay]);
+
+
+
+
 
   useEffect(() => {
     if (!video.current) {
