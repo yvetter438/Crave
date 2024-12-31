@@ -123,6 +123,7 @@ export default function Profile() {
           <Text style={styles.statNumber}>{postCount}</Text>
           <Text style={styles.statLabel}>Posts</Text>
         </View>
+        {/*
         <View style={styles.stats}>
           <Text style={styles.statNumber}>1.2K</Text>
           <Text style={styles.statLabel}>Followers</Text>
@@ -131,6 +132,7 @@ export default function Profile() {
           <Text style={styles.statNumber}>200</Text>
           <Text style={styles.statLabel}>Following</Text>
         </View>
+        */}
       </View>
 
       <FlatList

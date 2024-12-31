@@ -113,13 +113,14 @@ export default function VideoPost({post, activePostId, shouldPlay }: VideoPost) 
           <View style={styles.leftColumn}>
             <Text style={styles.caption}>{post.description}</Text>
           </View>
-
-          {/* Vertical column of icon-buttons.*/}
+          {/*
+          {/* Vertical column of icon-buttons.
           <View style={styles.rightColumn}>
             <Ionicons name='heart' size={40} color="white" />
             <Ionicons name='share-social-sharp' size={40} color="white" />
             <Ionicons name='bookmark' size={40} color="white" />
           </View>
+          */}
         </View>
         </SafeAreaView>
         </Pressable> 
