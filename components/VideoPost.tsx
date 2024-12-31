@@ -26,18 +26,34 @@ export default function VideoPost({post, activePostId }: VideoPost) {
   const tabBarHeight: number = useBottomTabBarHeight();
   const adjustedHeight: number = height - tabBarHeight;
 
+  useEffect(() => {
+    if (!video.current) {
+        return;
+    }
+
+    // Cleanup function to ensure video is unloaded when component unmounts
+    return () => {
+      if (video.current) {
+        video.current.unloadAsync();
+      }
+    };
+  }, []); // Empty dependency array to run only on mount/unmount
+
+
+
+
 
   useEffect(() => {
     if (!video.current) {
         return;
     }
     if (activePostId != post.id) {
-        video.current.pauseAsync();
+        video.current.stopAsync();
     }
     if (activePostId == post.id) {
         video.current.playAsync();
     }
-  }, [activePostId, video.current])
+  }, [activePostId, post.id]);
   
   const onPress = () => {
     if (!video.current) {

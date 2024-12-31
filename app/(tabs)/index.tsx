@@ -64,8 +64,20 @@ export default function Tab() {
       }
   
       if (data.length === 0) {
-        // No more posts available, loop back to the first set of posts
-        setPosts((currentPosts) => [...currentPosts, ...currentPosts.slice(0, 10)]);
+        // Instead of appending to existing posts, replace with initial set
+        const { data: initialPosts } = await supabase
+          .from('posts')
+          .select('id, video_url, description')
+          .range(0, 0);
+  
+        const formattedPosts = initialPosts.map((item) => ({
+          id: item.id.toString(),
+          video_url: item.video_url,
+          description: item.description,
+        }));
+  
+        setPosts(formattedPosts);
+        setActivePostId(formattedPosts[0].id);
       } else {
         // Append fetched posts to the current list
         const additionalPosts = data.map((item) => ({
@@ -81,7 +93,7 @@ export default function Tab() {
     }
   };
   
-
+///previous activePostId does not get registered
   const viewabilityConfigCallbackPairs = useRef([
       {
         viewabilityConfig: { itemVisiblePercentThreshold: 50 },
