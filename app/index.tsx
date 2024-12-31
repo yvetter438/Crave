@@ -31,9 +31,10 @@ export default function Index() {
 
 
   const imageAnimatedStyle = useAnimatedStyle(() => {
-    const interpolation = interpolate(imagePosition.value, [0, 1], [-height / 2, 0])
+    const interpolation = interpolate(imagePosition.value, [0, 1], [-height * .52, 0])
     return {
-      transform: [{translateY: withTiming(interpolation, {duration: 1000})}]
+      transform: [{translateY: withTiming(interpolation, {duration: 1000})}],
+      zIndex: -1
     }
   })
 
@@ -269,7 +270,7 @@ const styles = StyleSheet.create({
   formInputContainer: {
     marginBottom: 70,
     ...StyleSheet.absoluteFillObject,
-    zIndex: -1,
+    zIndex: 1,
     justifyContent: 'center',
   },
   closeButtonContainer: {
