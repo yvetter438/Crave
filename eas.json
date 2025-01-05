@@ -17,5 +17,14 @@
         "autoIncrement": true
       }
     }
+  },
+  "submit": {
+    "production": {
+      "ios": {
+        "appleId": "yannick.vetter@outlook.com",
+        "ascAppId": "6740149234",
+        "appleTeamId": "YLHMAL2NW9"
+      }
   }
+}
 }

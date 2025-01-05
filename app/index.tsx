@@ -141,7 +141,7 @@ export default function Index() {
             <Ellipse cx={width / 2} rx={height} ry={height + 100} />
           </ClipPath>
           <Image 
-          href={require('.././assets/images/login-background.jpg')}
+          href={require('.././assets/images/login-background.png')}
           width={width + 100} 
           height={height + 100}
           preserveAspectRatio="xMidYMid slice"

@@ -4,23 +4,24 @@
     "slug": "FoodyDemo",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/images/icon.jpg",
+    "icon": "./assets/images/icon.png",
     "scheme": "myapp",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "splash": {
-      "image": "./assets/images/login-background.jpg",
+      "image": "./assets/images/login-background.png",
       "resizeMode": "contain",
       "backgroundColor": "#ffffff"
     },
     "ios": {
-      "supportsTablet": true,
+      "supportsTablet": false,
       "bundleIdentifier": "com.yvetter.FoodyDemo",
       "buildNumber": "1",
       "infoPlist": {
         "NSCameraUsageDescription": "This app needs access to the camera to take photos.",
         "NSPhotoLibraryUsageDescription": "This app needs access to photos for uploading images.",
-        "NSMicrophoneUsageDescription": "This app needs access to the microphone for videos."
+        "NSMicrophoneUsageDescription": "This app needs access to the microphone for videos.",
+        "UIRequiredDeviceCapabilities": ["telephony"]
       }
     },
     "android": {
