@@ -21,8 +21,7 @@ expo-env.d.ts
 
 
 # Environment variables
-.env
-.env.*
+
 
 ios/
 android/
