@@ -16,12 +16,14 @@
     "ios": {
       "supportsTablet": false,
       "bundleIdentifier": "com.yvetter.FoodyDemo",
-      "buildNumber": "1",
+      "buildNumber": "2",
       "infoPlist": {
         "NSCameraUsageDescription": "This app needs access to the camera to take photos.",
         "NSPhotoLibraryUsageDescription": "This app needs access to photos for uploading images.",
         "NSMicrophoneUsageDescription": "This app needs access to the microphone for videos.",
-        "UIRequiredDeviceCapabilities": ["telephony"]
+        "UIRequiredDeviceCapabilities": [
+          "telephony"
+        ]
       }
     },
     "android": {
@@ -30,8 +32,10 @@
         "backgroundColor": "#ffffff"
       },
       "permissions": [
+        "android.permission.RECORD_AUDIO",
         "android.permission.RECORD_AUDIO"
-      ]
+      ],
+      "package": "com.yvetter.FoodyDemo"
     },
     "web": {
       "bundler": "metro",
