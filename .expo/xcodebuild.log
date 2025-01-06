@@ -1,0 +1,9 @@
+Command line invocation:
+    /Applications/Xcode.app/Contents/Developer/usr/bin/xcodebuild -workspace /Users/yamjuice/Desktop/Hackathon/FoodyDemo/ios/FoodyDemo.xcworkspace -configuration Debug -scheme FoodyDemo -destination id=00008120-000978580E68201E DEVELOPMENT_TEAM=YLHMAL2NW9 -allowProvisioningUpdates -allowProvisioningDeviceRegistration
+
+User defaults from command line:
+    IDEPackageSupportUseBuiltinSCM = YES
+
+Build settings from command line:
+    DEVELOPMENT_TEAM = YLHMAL2NW9
+
