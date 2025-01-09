@@ -191,6 +191,10 @@ export default function Index() {
           />
           <Animated.View style={[styles.formButton, formButtonAnimatedStyle]}>
             <Pressable 
+              style={styles.button} 
+               // {width: width - 40}, 
+               // {backgroundColor: 'rgba(0,255,0,0.2)'} debug for button width
+              
               onPress={() => {
                 formButtonScale.value = withSequence(withSpring(1.5), withSpring(1));
                 if (isRegistering) {
@@ -225,7 +229,9 @@ const styles = StyleSheet.create({
     marginHorizontal: 20,
     marginVertical: 10,
     borderWidth: 1,
-    borderColor: 'white'
+    borderColor: 'white',
+    width: width - 40,
+    
   }, 
   buttonText: {
     fontSize: 20,
