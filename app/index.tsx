@@ -145,11 +145,17 @@ export default function Index() {
           width={width + 100} 
           height={height + 100}
           preserveAspectRatio="xMidYMid slice"
+          x={-50}
           clipPath="url(#clipPathId)"
           />
         </Svg>
         <Animated.View style={[styles.closeButtonContainer, closeButtonContainerStyle]}>
-          <Text onPress={() => imagePosition.value = 1}>X</Text>
+        <Pressable 
+            style={styles.closeButton}
+            onPress={() => imagePosition.value = 1}
+          >
+            <Text style={styles.closeButtonText}>X</Text>
+          </Pressable>
         </Animated.View>
       </Animated.View>
       <View style={styles.bottomContainer}>
@@ -173,6 +179,7 @@ export default function Index() {
             value={email}
             autoCapitalize="none"
           />
+          {/*}
           {isRegistering && (
           <TextInput 
             placeholder="Full Name"  
@@ -180,6 +187,7 @@ export default function Index() {
             style={styles.textInput}
           />
           )}
+            */}
           <TextInput 
             placeholder="Password"  
             placeholderTextColor="black" 
@@ -292,7 +300,18 @@ const styles = StyleSheet.create({
     elevation: 1,
     backgroundColor: 'white',
     alignItems: 'center',
-    borderRadius: 20,
+    borderRadius: 25,
     top: -20,
+  },
+  closeButtonText: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: 'black',
+  },
+  closeButton: {
+    height: '100%',
+    width: '100%',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
 });
