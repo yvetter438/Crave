@@ -256,10 +256,17 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: 'row',
     justifyContent: 'flex-end',
-    padding: 16,
-    paddingTop: 60,
+    padding: 8,
+    paddingTop: 20,
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    zIndex: 1,
   },
   settingsButton: {
-    padding: 8,
-  }
+    padding: 4,
+    marginRight: 10,
+    marginTop: 0,
+  },
 });
