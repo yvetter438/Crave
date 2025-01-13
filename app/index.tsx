@@ -102,6 +102,14 @@ export default function Index() {
   }
 
 
+  const guestLoginHandler = () => {
+    // Animate the button
+    formButtonScale.value = withSequence(withSpring(1.5), withSpring(1));
+    setTimeout(() => {
+      router.push('./(tabs)');
+    }, 800);
+  };
+
 
   const loginHandler = () => {
     imagePosition.value = 0;
@@ -160,6 +168,11 @@ export default function Index() {
       </Animated.View>
       <View style={styles.bottomContainer}>
         <Animated.View style={buttonsAnimatedStyle}>
+          {/*   Guest Login Button*/    }
+          <Pressable style={styles.button} onPress={guestLoginHandler}>
+            <Text style={[styles.buttonText, styles.guestButtonText]}>BROWSE AS GUEST</Text>
+            </Pressable>
+          
           <Pressable style={styles.button} onPress={loginHandler}>
             <Text style={styles.buttonText}>LOG IN</Text>
           </Pressable>
@@ -313,5 +326,12 @@ const styles = StyleSheet.create({
     width: '100%',
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  guestButtonText: {
+    color: 'white',
+  },
+  guestButton: {
+    backgroundColor: 'rgba(128, 128, 128, 0.8)', // Gray color for guest mode
+    borderColor: '#ddd',
   },
 });
