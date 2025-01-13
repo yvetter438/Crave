@@ -4,7 +4,8 @@ import { Video } from 'expo-av';
 import * as ImagePicker from 'expo-image-picker';
 import { supabase } from '../../lib/supabase';
 import { Session } from '@supabase/supabase-js';
-
+import { Ionicons } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
 //post type
 interface Post {
   id: number;
@@ -22,6 +23,7 @@ export default function Profile() {
   const [posts, setPosts] = useState<Post[]>([]);
   const [loading, setLoading] = useState(true);
   const [ postCount, setPostCount] = useState(0);
+  const router = useRouter();
 
   useEffect(() => {
     // Get initial session
@@ -111,6 +113,15 @@ export default function Profile() {
 
   return (
     <View style={styles.container}>
+      <View style={styles.header}>
+        <View style={{ flex: 1}} /> 
+        <TouchableOpacity 
+          style={styles.settingsButton} 
+          onPress={() => router.push('/settings')}
+        >
+          <Ionicons name="settings-outline" size={24} color="black" />
+        </TouchableOpacity>
+      </View>
       <TouchableOpacity onPress={() => setModalVisible(true)}>
         <Image source={{ uri: image }} style={styles.profileImage} />
       </TouchableOpacity>
@@ -242,4 +253,13 @@ const styles = StyleSheet.create({
     fontSize: 18,
     textDecorationLine: 'underline',
   },
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    padding: 16,
+    paddingTop: 60,
+  },
+  settingsButton: {
+    padding: 8,
+  }
 });
