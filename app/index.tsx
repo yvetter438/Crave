@@ -1,6 +1,6 @@
 import { Text, View, TextInput, StyleSheet, Dimensions, Pressable, KeyboardAvoidingView, Platform, TouchableWithoutFeedback, Keyboard, Alert } from "react-native";
 import { Link, useRouter } from 'expo-router';
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import Svg, { Image, Ellipse, ClipPath } from 'react-native-svg';
 import Animated, { 
@@ -12,6 +12,7 @@ import Animated, {
     runOnJS,
     withSequence,
     withSpring,
+    withRepeat,
     } from 'react-native-reanimated';
 
 
@@ -21,11 +22,44 @@ export default function Index() {
   const formButtonScale = useSharedValue(1);
   const [isRegistering, setIsRegistering] = useState(false);
   const router = useRouter();
+  const shimmer = useSharedValue(0);
 
   //supabase logic
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    shimmer.value = withRepeat(
+      withSequence(
+        withTiming(1, { duration: 2000 }),
+        withTiming(0, { duration: 2000 })
+      ),
+      -1, // -1 means infinite repeat
+      true // reverse the animation
+    );
+  }, []);
+
+  // Add this with your other animated styles
+  const shimmerStyle = useAnimatedStyle(() => {
+    return {
+      position: 'absolute',
+      top: 0,
+      left: 0,
+      right: 0,
+      bottom: 0,
+      opacity: 0.2,
+      backgroundColor: 'rgba(255, 255, 255, 0.2)',
+      transform: [{
+        translateX: interpolate(
+          shimmer.value,
+          [0, 1],
+          [-width, width]
+        ),
+      }],
+    };
+  });
+
 
 
   const imageAnimatedStyle = useAnimatedStyle(() => {
@@ -156,6 +190,7 @@ export default function Index() {
           x={-50}
           clipPath="url(#clipPathId)"
           />
+          {/*  <Animated.View style={shimmerStyle} /> */}
         </Svg>
         <Animated.View style={[styles.closeButtonContainer, closeButtonContainerStyle]}>
         <Pressable 
@@ -230,6 +265,7 @@ export default function Index() {
         </Animated.View> 
       </View>
     </Animated.View>
+    
     </TouchableWithoutFeedback>
     </KeyboardAvoidingView>
   );
