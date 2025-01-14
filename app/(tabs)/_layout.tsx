@@ -5,7 +5,9 @@ import { ActivePostProvider } from '@/context/ActivePostContext';
 export default function TabLayout() {
   return (
     <ActivePostProvider>
-    <Tabs screenOptions={{ tabBarActiveTintColor: 'blue' }}>
+    <Tabs screenOptions={{ 
+      tabBarActiveTintColor: 'blue'
+     }}>
       <Tabs.Screen
         name="recipe"
         options={{
