@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, FlatList, Dimensions, StyleSheet, ScrollView } from 'react-native';
+import { View, Text, FlatList, Dimensions, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
 import { useLocalSearchParams } from 'expo-router';
 import { supabase } from '../../lib/supabase';
 import { useActivePost } from '@/context/ActivePostContext';
@@ -19,6 +19,7 @@ const RecipeScreen = () => {
   const [recipe, setRecipe] = useState<Recipe | null>(null);
   const [loading, setLoading]= useState(true);
   const { activePostId } = useActivePost();
+  const [activeTab, setActiveTab] = useState('info');
 
 
  // console.log('Active Post ID on Recipe Screen:', activePostId);// Add this console log to debug
@@ -67,41 +68,123 @@ const RecipeScreen = () => {
     return <Text>Recipe not found.</Text>;
   }
 
+  const renderContent = () => {
+    switch (activeTab) {
+      case 'info':
+        return (
+          <View style={styles.tabContent}>
+            <Text style={styles.description}>{recipe?.description}</Text>
+            <View style={styles.section}>
+              <Text style={styles.sectionTitle}>Ingredients</Text>
+              {recipe?.ingredients.map((ingredient: string, index: number) => (
+                <Text key={index} style={styles.ingredient}>
+                  - {ingredient}
+                </Text>
+              ))}
+            </View>
+          </View>
+        );
+      case 'instructions':
+        return (
+          <View style={styles.tabContent}>
+            {recipe?.instructions.map((instruction: string, index: number) => (
+              <View key={index} style={styles.instructionContainer}>
+                <Text style={styles.stepNumber}>Step {index + 1}</Text>
+                <Text style={styles.instruction}>{instruction}</Text>
+                {index < recipe.instructions.length - 1 && <View style={styles.separator} />}
+              </View>
+            ))}
+          </View>
+        );
+      case 'nutrition':
+        return (
+          <View style={styles.tabContent}>
+            <Text style={styles.placeholder}>Nutrition information coming soon...</Text>
+          </View>
+        );
+      default:
+        return null;
+    }
+  };
 
   return (
-    <ScrollView style={[styles.recipeContainer, { width, height }]}>
-      <Text style={styles.title}>{recipe.title}</Text>
-      <Text style={styles.description}>{recipe.description}</Text>
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Ingredients</Text>
-        {recipe.ingredients.map((ingredient: string, index: number) => (
-          <Text key={index} style={styles.ingredient}>
-            - {ingredient}
-          </Text>
+    <View style={[styles.container, { width, height }]}>
+      <View style={styles.header}>
+        <Text style={styles.title}>{recipe?.title}</Text>
+        <Text style={styles.username}>by @{recipe?.username || 'username'}</Text>
+      </View>
+
+      <View style={styles.tabs}>
+        {['info', 'instructions', 'nutrition'].map((tab) => (
+          <TouchableOpacity
+            key={tab}
+            style={[styles.tab, activeTab === tab && styles.activeTab]}
+            onPress={() => setActiveTab(tab)}
+          >
+            <Text style={[styles.tabText, activeTab === tab && styles.activeTabText]}>
+              {tab.charAt(0).toUpperCase() + tab.slice(1)}
+            </Text>
+          </TouchableOpacity>
         ))}
       </View>
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Instructions</Text>
-        {recipe.instructions.map((instruction: string, index: number) => (
-          <Text key={index} style={styles.instruction}>
-            {index + 1}. {instruction}
-          </Text>
-        ))}
-      </View>
-    </ScrollView>
+
+      <ScrollView style={styles.content}>
+        {renderContent()}
+      </ScrollView>
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
-  recipeContainer: {
-    padding: 20,
+  container: {
+    flex: 1,
     backgroundColor: '#f8f8f8',
+  },
+  header: {
+    padding: 20,
+    backgroundColor: '#fff',
+    borderBottomWidth: 1,
+    borderBottomColor: '#eee',
   },
   title: {
     fontSize: 28,
     fontWeight: 'bold',
     textAlign: 'center',
-    marginBottom: 20,
+  },
+  username: {
+    fontSize: 16,
+    color: '#666',
+    textAlign: 'center',
+    marginTop: 5,
+  },
+  tabs: {
+    flexDirection: 'row',
+    borderBottomWidth: 1,
+    borderBottomColor: '#eee',
+    backgroundColor: '#fff',
+  },
+  tab: {
+    flex: 1,
+    paddingVertical: 15,
+    alignItems: 'center',
+  },
+  activeTab: {
+    borderBottomWidth: 2,
+    borderBottomColor: '#007AFF',
+  },
+  tabText: {
+    color: '#666',
+    fontSize: 16,
+  },
+  activeTabText: {
+    color: '#007AFF',
+    fontWeight: 'bold',
+  },
+  content: {
+    flex: 1,
+  },
+  tabContent: {
+    padding: 20,
   },
   description: {
     fontSize: 18,
@@ -120,9 +203,31 @@ const styles = StyleSheet.create({
     fontSize: 16,
     marginBottom: 5,
   },
+  instructionContainer: {
+    marginBottom: 24,
+  },
+  stepNumber: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#007AFF',
+    marginBottom: 8,
+  },
   instruction: {
+    fontSize: 17,
+    lineHeight: 24,
+    color: '#333',
+    paddingHorizontal: 4,
+  },
+  separator: {
+    height: 1,
+    backgroundColor: '#eee',
+    marginTop: 20,
+  },
+  placeholder: {
     fontSize: 16,
-    marginBottom: 10,
+    color: '#666',
+    textAlign: 'center',
+    marginTop: 20,
   },
 });
 
