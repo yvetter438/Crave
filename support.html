@@ -5,6 +5,68 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Crave App Support</title>
     <link rel="stylesheet" href="styles.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html, body {
+            height: 100%;
+            width: 100%;
+            overflow-x: hidden;
+        }
+
+        body {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding-top: 80px; /* Adjust based on header height */
+            min-height: 100vh;
+        }
+
+        header, main {
+            text-align: center;
+            width: 100%;
+            padding: 0 20px;
+        }
+
+        main {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+
+        section {
+            margin: 1rem auto;
+            width: 100%;
+            max-width: 800px;
+        }
+
+        .contact-info {
+            margin-top: 3rem;
+        }
+
+        .email {
+            color: #333;
+            text-decoration: none;
+        }
+
+        .email:hover {
+            text-decoration: underline;
+        }
+
+        ul {
+            list-style-position: inside;
+            padding: 0;
+        }
+
+        h1, h2, p, ul {
+            width: 100%;
+        }
+    </style>
 </head>
 <body>
     <header>
