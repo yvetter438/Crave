@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Crave App Support</title>
+    <link rel="stylesheet" href="../css/styles.css">
+    <!-- Font Awesome if needed -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html, body {
+            height: 100%;
+            width: 100%;
+            overflow-x: hidden;
+        }
+
+        body {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding-top: 80px; /* Adjust based on header height */
+            min-height: 100vh;
+        }
+
+        header, main {
+            text-align: center;
+            width: 100%;
+            padding: 0 20px;
+        }
+
+        main {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+
+        section {
+            margin: 1rem auto;
+            width: 100%;
+            max-width: 800px;
+        }
+
+        .contact-info {
+            margin-top: 3rem;
+        }
+
+        .email {
+            color: #333;
+            text-decoration: none;
+        }
+
+        .email:hover {
+            text-decoration: underline;
+        }
+
+        ul {
+            list-style-position: inside;
+            padding: 0;
+        }
+
+        h1, h2, p, ul {
+            width: 100%;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="header-container">
+            <div class="logo">
+                <a href="../index.html">
+                    <img src="../webassets/CRAVESVG.svg" alt="Logo">
+                </a>
+            </div>
+            <nav>
+                <ul>
+                    <li><a href="../index.html#features">Features</a></li>
+                    <li><a href="about.html">About</a></li>
+                </ul>
+            </nav>
+        </div>
+    </header>
+    <main>
+        <section>
+            <h2>Welcome to Crave Support</h2>
+            <p>Find help and information about using the Crave app.</p>
+        </section>
+
+        <section>
+            <h2>How to use the Crave app</h2>
+            <p>The Crave app is a platform for finding and sharing recipes. Here's how to get started:</p>
+            <ul>
+                <li>Browse through recipes and videos in the feed</li>
+                <li>Swipe right on recipes you want to save</li>
+             <!--   <li>View your saved recipes in your profile</li> 
+                <li>Share your own recipes with the community</li> -->
+            </ul>
+        </section>
+
+        <section class="contact-info">
+            <h2>Contact Support</h2>
+            <p>Having issues or questions? We're here to help!</p>
+            <p>Email us at: <a href="mailto:yannick.vetter@outlook.com" class="email">yannick.vetter@outlook.com</a></p>
+        </section>
+    </main>
+</body>
+</html>
