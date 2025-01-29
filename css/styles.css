@@ -176,3 +176,21 @@ footer {
     color: #333;
     font-size: 1.1em;
 }
+
+.support-link {
+    display: inline-block;
+    color: #0a7ea4;
+    text-decoration: none;
+    font-weight: 500;
+    padding: 10px 20px;
+    border: 2px solid #0a7ea4;
+    border-radius: 5px;
+    margin-top: 15px;
+    transition: all 0.3s ease;
+}
+
+.support-link:hover {
+    background-color: #0a7ea4;
+    color: white;
+    text-decoration: none;
+}
