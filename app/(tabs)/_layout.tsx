@@ -6,7 +6,10 @@ export default function TabLayout() {
   return (
     <ActivePostProvider>
     <Tabs screenOptions={{ 
-      tabBarActiveTintColor: 'blue'
+      tabBarStyle: {
+        backgroundColor: 'black',
+      },
+      tabBarActiveTintColor: 'orange'
      }}>
       <Tabs.Screen
         name="recipe"
