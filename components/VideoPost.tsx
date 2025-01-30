@@ -1,12 +1,18 @@
 import { View, Text, StyleSheet, Pressable, useWindowDimensions } from 'react-native';
-import { AVPlaybackStatus, ResizeMode, Video } from 'expo-av';
+import { AVPlaybackStatus, ResizeMode, Video, Audio } from 'expo-av';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRef, useState } from 'react';
 import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs';
 import { useEffect } from 'react';
+import { Platform } from 'react-native';
 
+// Add this interface to handle the status type properly
+type AVPlaybackStatusSuccess = AVPlaybackStatus & {
+  isLoaded: true;
+  volume: number;
+};
 
 type VideoPost = {
     post: {
@@ -22,10 +28,48 @@ type VideoPost = {
 export default function VideoPost({post, activePostId, shouldPlay }: VideoPost) {
   const video = useRef<Video>(null);
   const [status, setStatus] = useState<AVPlaybackStatus>();
+  const [isMuted, setIsMuted] = useState(false);
   const isPlaying = status?.isLoaded && status.isPlaying;
   const { height }= useWindowDimensions();
   const tabBarHeight: number = useBottomTabBarHeight();
   const adjustedHeight: number = height - tabBarHeight;
+
+
+  useEffect(() => {
+    if (!video.current) {
+      return;
+    }
+
+    // Configure audio to play even when device is muted
+    Audio.setAudioModeAsync({
+      playsInSilentModeIOS: true, // Corrected property name
+      staysActiveInBackground: false,
+      shouldDuckAndroid: true
+    });
+
+    // Check if device is in silent mode (iOS only)
+    if (Platform.OS === 'ios') {
+      // Remove the getIsMutedAsync check since it's not available
+      setIsMuted(true); // Start muted on iOS silent mode
+    }
+  }, []);
+
+// Handle volume button changes only when in silent mode
+// Handle volume button changes only when in silent mode
+useEffect(() => {
+  if (status?.isLoaded && isMuted) {
+    const playbackStatus = status as AVPlaybackStatusSuccess;
+    // When volume is adjusted (volume will be > 0), unmute the video
+    if (playbackStatus.volume > 0) {
+      setIsMuted(false);
+    }
+  }
+}, [status]);
+
+
+
+
+
 
   useEffect(() => {
     if (!video.current) {
