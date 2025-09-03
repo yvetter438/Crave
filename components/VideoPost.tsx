@@ -1,4 +1,4 @@
-import { View, Text, StyleSheet, Pressable, useWindowDimensions } from 'react-native';
+import { View, Text, StyleSheet, Pressable, useWindowDimensions, TouchableOpacity } from 'react-native';
 import { AVPlaybackStatus, ResizeMode, Video, Audio } from 'expo-av';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Ionicons from '@expo/vector-icons/Ionicons';
@@ -7,6 +7,7 @@ import { useRef, useState } from 'react';
 import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs';
 import { useEffect } from 'react';
 import { Platform } from 'react-native';
+import { router } from 'expo-router';
 
 // Add this interface to handle the status type properly
 type AVPlaybackStatusSuccess = AVPlaybackStatus & {
@@ -126,6 +127,10 @@ useEffect(() => {
     } 
   }
 
+  const onRecipePress = () => {
+    router.push(`/(tabs)/recipe?id=${post.id}`);
+  }
+
   return (
     <View style={[styles.container, {height: adjustedHeight}]}>
       <Video 
@@ -155,13 +160,14 @@ useEffect(() => {
             <Text style={styles.caption}>{post.description}</Text>
           </View>
           
-          {/* Vertical column of icon-buttons. 
-          <View style={styles.rightColumn}>
-            <Ionicons name='heart' size={40} color="white" />
-            <Ionicons name='share-social-sharp' size={40} color="white" />
-            <Ionicons name='bookmark' size={40} color="white" />
-          </View>
-          */}
+          {/* Recipe button */}
+          <TouchableOpacity 
+            style={styles.recipeButton} 
+            onPress={onRecipePress}
+            activeOpacity={0.7}
+          >
+            <Ionicons name="restaurant" size={24} color="white" />
+          </TouchableOpacity>
         </View>
         </SafeAreaView>
         </Pressable> 
@@ -194,6 +200,17 @@ const styles = StyleSheet.create({
   },
   leftColumn: {
     flex: 1,
+  },
+  recipeButton: {
+    backgroundColor: 'rgba(0, 0, 0, 0.6)',
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.3)',
+    marginRight: 10,
   },
   overlay: {
     top: '50%',
