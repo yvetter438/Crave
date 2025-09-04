@@ -157,6 +157,15 @@ useEffect(() => {
          <View style={styles.footer}>
           {/* bottom: caption */}
           <View style={styles.leftColumn}>
+            {/* Profile picture */}
+            <View style={styles.profilePicture}>
+              {/* Dummy profile picture - will be replaced with actual image later */}
+            </View>
+            
+            {/* Username */}
+            <Text style={styles.username}>@dummyuser</Text>
+            
+            {/* Description */}
             <Text style={styles.caption}>{post.description}</Text>
           </View>
           
@@ -241,6 +250,22 @@ const styles = StyleSheet.create({
   },
   leftColumn: {
     flex: 1,
+  },
+  profilePicture: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: 'rgba(255, 255, 255, 0.3)',
+    marginBottom: 8,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.5)',
+  },
+  username: {
+    color: 'white',
+    fontSize: 14,
+    fontFamily: 'Inter',
+    fontWeight: 'bold',
+    marginBottom: 6,
   },
 
   overlay: {
