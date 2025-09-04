@@ -160,14 +160,53 @@ useEffect(() => {
             <Text style={styles.caption}>{post.description}</Text>
           </View>
           
-          {/* Recipe button */}
-          <TouchableOpacity 
-            style={styles.recipeButton} 
-            onPress={onRecipePress}
-            activeOpacity={0.7}
-          >
-            <Ionicons name="restaurant" size={24} color="white" />
-          </TouchableOpacity>
+          {/* Right side button stack */}
+          <View style={styles.rightColumn}>
+            {/* Shopping button */}
+            <TouchableOpacity 
+              style={styles.actionButton} 
+              onPress={() => {}}
+              activeOpacity={0.7}
+            >
+              <Ionicons name="bag-outline" size={24} color="white" />
+            </TouchableOpacity>
+            
+            {/* Recipe button */}
+            <TouchableOpacity 
+              style={styles.actionButton} 
+              onPress={onRecipePress}
+              activeOpacity={0.7}
+            >
+              <Ionicons name="restaurant" size={24} color="white" />
+            </TouchableOpacity>
+            
+            {/* Like button */}
+            <TouchableOpacity 
+              style={styles.actionButton} 
+              onPress={() => {}}
+              activeOpacity={0.7}
+            >
+              <Ionicons name="heart-outline" size={24} color="white" />
+            </TouchableOpacity>
+            
+            {/* Comments button */}
+            <TouchableOpacity 
+              style={styles.actionButton} 
+              onPress={() => {}}
+              activeOpacity={0.7}
+            >
+              <Ionicons name="chatbubble-outline" size={24} color="white" />
+            </TouchableOpacity>
+            
+            {/* Share button */}
+            <TouchableOpacity 
+              style={styles.actionButton} 
+              onPress={() => {}}
+              activeOpacity={0.7}
+            >
+              <Ionicons name="share-outline" size={24} color="white" />
+            </TouchableOpacity>
+          </View>
         </View>
         </SafeAreaView>
         </Pressable> 
@@ -197,11 +236,17 @@ const styles = StyleSheet.create({
   },
   rightColumn: {
     gap: 10,
+    alignItems: 'center',
+    marginRight: 10,
   },
   leftColumn: {
     flex: 1,
   },
-  recipeButton: {
+
+  overlay: {
+    top: '50%',
+  },
+  actionButton: {
     backgroundColor: 'rgba(0, 0, 0, 0.6)',
     width: 44,
     height: 44,
@@ -210,9 +255,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     borderWidth: 1,
     borderColor: 'rgba(255, 255, 255, 0.3)',
-    marginRight: 10,
-  },
-  overlay: {
-    top: '50%',
+    marginBottom: 10,
   },
 });
