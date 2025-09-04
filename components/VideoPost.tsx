@@ -131,6 +131,10 @@ useEffect(() => {
     router.push(`/(tabs)/recipe?id=${post.id}`);
   }
 
+  const onShoppingPress = () => {
+    router.push('/(tabs)/shopping');
+  }
+
   return (
     <View style={[styles.container, {height: adjustedHeight}]}>
       <Video 
@@ -174,7 +178,7 @@ useEffect(() => {
             {/* Shopping button */}
             <TouchableOpacity 
               style={styles.actionButton} 
-              onPress={() => {}}
+              onPress={onShoppingPress}
               activeOpacity={0.7}
             >
               <Ionicons name="bag-outline" size={24} color="white" />

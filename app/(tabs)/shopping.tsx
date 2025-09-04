@@ -1,34 +1,148 @@
 import React from 'react';
-import { View, Text, StyleSheet, FlatList, Dimensions, TouchableOpacity, Image } from 'react-native';
+import { View, Text, StyleSheet, FlatList, Dimensions, TouchableOpacity, Image, Linking, Alert } from 'react-native';
 
 const { width } = Dimensions.get('window');
 const COLUMN_WIDTH = (width - 30) / 2; // 30px for margins and spacing
 
-// Dummy product data with varying heights
-const dummyProducts = [
-  { id: '1', height: 200, imageUrl: 'https://via.placeholder.com/200x200/FF6B6B/FFFFFF?text=Kitchen+Tool' },
-  { id: '2', height: 300, imageUrl: 'https://via.placeholder.com/200x300/4ECDC4/FFFFFF?text=Cooking+Book' },
-  { id: '3', height: 250, imageUrl: 'https://via.placeholder.com/200x250/45B7D1/FFFFFF?text=Ingredient' },
-  { id: '4', height: 180, imageUrl: 'https://via.placeholder.com/200x180/96CEB4/FFFFFF?text=Utensil' },
-  { id: '5', height: 320, imageUrl: 'https://via.placeholder.com/200x320/FFEAA7/FFFFFF?text=Recipe+Book' },
-  { id: '6', height: 220, imageUrl: 'https://via.placeholder.com/200x220/DDA0DD/FFFFFF?text=Spice+Set' },
-  { id: '7', height: 280, imageUrl: 'https://via.placeholder.com/200x280/98D8C8/FFFFFF?text=Kitchen+Gadget' },
-  { id: '8', height: 190, imageUrl: 'https://via.placeholder.com/200x190/F7DC6F/FFFFFF?text=Cookware' },
-  { id: '9', height: 260, imageUrl: 'https://via.placeholder.com/200x260/BB8FCE/FFFFFF?text=Food+Storage' },
-  { id: '10', height: 240, imageUrl: 'https://via.placeholder.com/200x240/85C1E9/FFFFFF?text=Baking+Tool' },
-  { id: '11', height: 200, imageUrl: 'https://via.placeholder.com/200x200/F8C471/FFFFFF?text=Cutting+Board' },
-  { id: '12', height: 290, imageUrl: 'https://via.placeholder.com/200x290/82E0AA/FFFFFF?text=Meal+Prep' },
+// Real product data with Amazon affiliate links
+const realProducts = [
+  // Kitchen Tools
+  { 
+    id: '1', 
+    name: 'Butcher Knife', 
+    price: '$24.99', 
+    imageUrl: 'https://m.media-amazon.com/images/I/81qbYfQVIRL._AC_SX679_.jpg', 
+    affiliateLink: 'https://amzn.to/46lnnMM', 
+    category: 'Kitchen Tools',
+    height: 280 
+  },
+  { 
+    id: '2', 
+    name: 'Stainless Steel Pan', 
+    price: '$89.99', 
+    imageUrl: 'https://m.media-amazon.com/images/I/61oJafdHwXS._AC_SL1500_.jpg', 
+    affiliateLink: 'https://amzn.to/46iv6v4', 
+    category: 'Kitchen Tools',
+    height: 320 
+  },
+  { 
+    id: '3', 
+    name: 'Wok', 
+    price: '$45.99', 
+    imageUrl: 'https://m.media-amazon.com/images/I/71emkWTryEL._AC_SL1500_.jpg', 
+    affiliateLink: 'https://amzn.to/4ne4JMy', 
+    category: 'Kitchen Tools',
+    height: 280 
+  },
+  { 
+    id: '4', 
+    name: 'Damascus Knives', 
+    price: '$129.99', 
+    imageUrl: 'https://m.media-amazon.com/images/I/71rMbEKBqNL._AC_SL1500_.jpg', 
+    affiliateLink: 'https://amzn.to/4lXpDyk', 
+    category: 'Kitchen Tools',
+    height: 300 
+  },
+  { 
+    id: '5', 
+    name: 'Wooden Skewers', 
+    price: '$12.99', 
+    imageUrl: 'https://m.media-amazon.com/images/I/71llH6F+ZAL._AC_SL1500_.jpg', 
+    affiliateLink: 'https://amzn.to/4p7vh3S', 
+    category: 'Kitchen Tools',
+    height: 200 
+  },
+  { 
+    id: '6', 
+    name: 'Steamer', 
+    price: '$34.99', 
+    imageUrl: 'https://m.media-amazon.com/images/I/71Cklldr-gL._AC_SL1500_.jpg', 
+    affiliateLink: 'https://amzn.to/42bAQEo', 
+    category: 'Kitchen Tools',
+    height: 250 
+  },
+  
+  // Ingredients
+  { 
+    id: '7', 
+    name: 'Tortillas', 
+    price: '$4.99', 
+    imageUrl: 'https://m.media-amazon.com/images/I/71yosT1fChL._SL1500_.jpg', 
+    affiliateLink: 'https://amzn.to/4pbrEtS', 
+    category: 'Ingredients',
+    height: 220 
+  },
+  { 
+    id: '8', 
+    name: 'Pasta', 
+    price: '$8.99', 
+    imageUrl: 'https://m.media-amazon.com/images/I/81jt7fcDJNL._SL1500_.jpg', 
+    affiliateLink: 'https://amzn.to/4gangHi', 
+    category: 'Ingredients',
+    height: 240 
+  },
+  { 
+    id: '9', 
+    name: 'Sichuan Peppercorns', 
+    price: '$15.99', 
+    imageUrl: 'https://m.media-amazon.com/images/I/71U3CTRUjKL._SL1500_.jpg', 
+    affiliateLink: 'https://amzn.to/464fppU', 
+    category: 'Ingredients',
+    height: 180 
+  },
+  { 
+    id: '10', 
+    name: 'Sea Salt Flakes', 
+    price: '$18.99', 
+    imageUrl: 'https://m.media-amazon.com/images/I/81AA2FkCA0L._SL1500_.jpg', 
+    affiliateLink: 'https://amzn.to/46jWHMm', 
+    category: 'Ingredients',
+    height: 200 
+  },
+  
+  // Appliances
+  { 
+    id: '11', 
+    name: 'StoveTop Espresso Maker', 
+    price: '$79.99', 
+    imageUrl: 'https://m.media-amazon.com/images/I/71lGXxjwVEL._AC_SL1500_.jpg', 
+    affiliateLink: 'https://amzn.to/4ga9X9Z', 
+    category: 'Appliances',
+    height: 260 
+  },
+  { 
+    id: '12', 
+    name: 'Air Fryer', 
+    price: '$149.99', 
+    imageUrl: 'https://m.media-amazon.com/images/I/81lTKYX5LNL._AC_SL1500_.jpg', 
+    affiliateLink: 'https://amzn.to/4805GUh', 
+    category: 'Appliances',
+    height: 290 
+  },
 ];
 
 const ShoppingScreen = () => {
-  const renderProduct = ({ item }: { item: typeof dummyProducts[0] }) => (
+  const handleProductPress = async (affiliateLink: string, productName: string) => {
+    try {
+      // Check if the link can be opened
+      const supported = await Linking.canOpenURL(affiliateLink);
+      
+      if (supported) {
+        await Linking.openURL(affiliateLink);
+      } else {
+        Alert.alert('Error', 'Cannot open this link');
+      }
+    } catch (error) {
+      Alert.alert('Error', 'Failed to open product link');
+      console.error('Error opening affiliate link:', error);
+    }
+  };
+
+  const renderProduct = ({ item }: { item: typeof realProducts[0] }) => (
     <TouchableOpacity 
       style={[styles.productCard, { height: item.height }]} 
       activeOpacity={0.8}
-      onPress={() => {
-        // TODO: Handle product tap - could open Amazon affiliate link
-        console.log('Product tapped:', item.id);
-      }}
+      onPress={() => handleProductPress(item.affiliateLink, item.name)}
     >
       <Image 
         source={{ uri: item.imageUrl }} 
@@ -36,8 +150,9 @@ const ShoppingScreen = () => {
         resizeMode="cover"
       />
       <View style={styles.productOverlay}>
-        <Text style={styles.productTitle}>Product {item.id}</Text>
-        <Text style={styles.productPrice}>$19.99</Text>
+        <Text style={styles.productTitle}>{item.name}</Text>
+        <Text style={styles.productPrice}>{item.price}</Text>
+        <Text style={styles.productCategory}>{item.category}</Text>
       </View>
     </TouchableOpacity>
   );
@@ -45,7 +160,7 @@ const ShoppingScreen = () => {
   return (
     <View style={styles.container}>
       <FlatList
-        data={dummyProducts}
+        data={realProducts}
         renderItem={renderProduct}
         keyExtractor={(item) => item.id}
         numColumns={2}
@@ -106,6 +221,12 @@ const styles = StyleSheet.create({
     color: 'white',
     fontSize: 16,
     fontWeight: 'bold',
+    marginBottom: 2,
+  },
+  productCategory: {
+    color: 'rgba(255, 255, 255, 0.8)',
+    fontSize: 11,
+    fontWeight: '500',
   },
   separator: {
     height: 10,
