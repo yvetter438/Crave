@@ -6,7 +6,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useRef, useState } from 'react';
 import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs';
 import { useEffect } from 'react';
-import { Platform } from 'react-native';
+import { Platform, Share } from 'react-native';
 import { router } from 'expo-router';
 
 // Add this interface to handle the status type properly
@@ -135,6 +135,19 @@ useEffect(() => {
     router.push('/(tabs)/shopping');
   }
 
+  const onSharePress = async () => {
+    try {
+      const shareUrl = 'https://cravesocial.app';
+      await Share.share({
+        message: `Check out Crave: ${shareUrl}`,
+        url: shareUrl,
+        title: 'Crave',
+      });
+    } catch (e) {
+      console.warn('Share failed', e);
+    }
+  }
+
   return (
     <View style={[styles.container, {height: adjustedHeight}]}>
       <Video 
@@ -214,7 +227,7 @@ useEffect(() => {
             {/* Share button */}
             <TouchableOpacity 
               style={styles.actionButton} 
-              onPress={() => {}}
+              onPress={onSharePress}
               activeOpacity={0.7}
             >
               <Ionicons name="share-outline" size={24} color="white" />
