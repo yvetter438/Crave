@@ -1,13 +1,13 @@
-import { View, Text, StyleSheet, Pressable, useWindowDimensions, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, Pressable, useWindowDimensions, TouchableOpacity, Image } from 'react-native';
 import { AVPlaybackStatus, ResizeMode, Video, Audio } from 'expo-av';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { LinearGradient } from 'expo-linear-gradient';
-import { useRef, useState } from 'react';
+import { useRef, useState, useEffect } from 'react';
 import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs';
-import { useEffect } from 'react';
 import { Platform, Share } from 'react-native';
 import { router } from 'expo-router';
+import { supabase } from '../lib/supabase';
 
 // Add this interface to handle the status type properly
 type AVPlaybackStatusSuccess = AVPlaybackStatus & {
@@ -20,9 +20,18 @@ type VideoPost = {
         id: string;
         video_url: string;
         description: string;
+        user: string;
     };
     activePostId: string;
     shouldPlay: boolean;
+};
+
+type Profile = {
+    id: number;
+    user_id: string;
+    username: string;
+    displayname: string;
+    avatar_url: string | null;
 };
 
 
@@ -30,6 +39,8 @@ export default function VideoPost({post, activePostId, shouldPlay }: VideoPost) 
   const video = useRef<Video>(null);
   const [status, setStatus] = useState<AVPlaybackStatus>();
   const [isMuted, setIsMuted] = useState(false);
+  const [profile, setProfile] = useState<Profile | null>(null);
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const isPlaying = status?.isLoaded && status.isPlaying;
   const { height }= useWindowDimensions();
   const tabBarHeight: number = useBottomTabBarHeight();
@@ -102,6 +113,41 @@ useEffect(() => {
       }
     };
   }, []); // Empty dependency array to run only on mount/unmount
+
+  // Fetch profile data for the post author
+  useEffect(() => {
+    const fetchProfile = async () => {
+      if (!post.user) return;
+      
+      try {
+        const { data: profileData, error } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('user_id', post.user)
+          .single();
+
+        if (error && error.code !== 'PGRST116') { // PGRST116 = no rows returned
+          console.error('Error fetching profile:', error);
+          return;
+        }
+
+        if (profileData) {
+          setProfile(profileData);
+          // Get avatar URL if it exists
+          if (profileData.avatar_url) {
+            const { data } = supabase.storage
+              .from('avatars')
+              .getPublicUrl(profileData.avatar_url);
+            setAvatarUrl(data.publicUrl);
+          }
+        }
+      } catch (error) {
+        console.error('Error fetching profile:', error);
+      }
+    };
+
+    fetchProfile();
+  }, [post.user]);
 
   useEffect(() => {
     if (!video.current) {
@@ -180,12 +226,18 @@ useEffect(() => {
           {/* bottom: caption */}
           <View style={styles.leftColumn}>
             {/* Profile picture */}
-            <View style={styles.profilePicture}>
-              {/* Dummy profile picture - will be replaced with actual image later */}
-            </View>
+            {avatarUrl ? (
+              <Image source={{ uri: avatarUrl }} style={styles.profilePicture} />
+            ) : (
+              <View style={styles.profilePicture}>
+                <Ionicons name="person" size={16} color="rgba(255, 255, 255, 0.7)" />
+              </View>
+            )}
             
             {/* Username */}
-            <Text style={styles.username}>@dummyuser</Text>
+            <Text style={styles.username}>
+              {profile?.username ? `@${profile.username}` : '@anonymous'}
+            </Text>
             
             {/* Description */}
             <Text style={styles.caption}>{post.description}</Text>
@@ -290,6 +342,8 @@ const styles = StyleSheet.create({
     marginBottom: 8,
     borderWidth: 1,
     borderColor: 'rgba(255, 255, 255, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   username: {
     color: 'white',

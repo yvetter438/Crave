@@ -36,7 +36,7 @@ export default function Tab() {
         // Fetch data from the Supabase table
         const { data, error } = await supabase
           .from('posts') // Replace 'videos' with the name of your Supabase table
-          .select('id, video_url, description');
+          .select('id, video_url, description, user');
   
         if (error) {
           console.error('Error fetching posts:', error);
@@ -48,6 +48,7 @@ export default function Tab() {
           id: item.id.toString(),
           video_url: item.video_url,
           description: item.description,
+          user: item.user,
         }));
   
         // Update the state with fetched posts
@@ -72,7 +73,7 @@ export default function Tab() {
       // Fetch the next batch of posts
       const { data, error } = await supabase
         .from('posts')
-        .select('id, video_url, description')
+        .select('id, video_url, description, user')
         .range(posts.length, posts.length + 10); // Fetch next 10 posts
   
       if (error) {
@@ -84,13 +85,14 @@ export default function Tab() {
         // Instead of appending to existing posts, replace with initial set
         const { data: initialPosts } = await supabase
           .from('posts')
-          .select('id, video_url, description')
+          .select('id, video_url, description, user')
           .range(0, 0);
   
         const formattedPosts = initialPosts.map((item) => ({
           id: item.id.toString(),
           video_url: item.video_url,
           description: item.description,
+          user: item.user,
         }));
   
         setPosts(formattedPosts);
@@ -101,6 +103,7 @@ export default function Tab() {
           id: item.id.toString(),
           video_url: item.video_url,
           description: item.description,
+          user: item.user,
         }));
   
         setPosts((currentPosts) => [...currentPosts, ...additionalPosts]);
