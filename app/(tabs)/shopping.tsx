@@ -153,6 +153,7 @@ const ShoppingScreen = () => {
         <Text style={styles.productTitle}>{item.name}</Text>
         <Text style={styles.productPrice}>{item.price}</Text>
         <Text style={styles.productCategory}>{item.category}</Text>
+        <Text style={styles.affiliateDisclaimer}>Amazon Affiliate</Text>
       </View>
     </TouchableOpacity>
   );
@@ -227,6 +228,13 @@ const styles = StyleSheet.create({
     color: 'rgba(255, 255, 255, 0.8)',
     fontSize: 11,
     fontWeight: '500',
+  },
+  affiliateDisclaimer: {
+    color: 'rgba(255, 255, 255, 0.5)',
+    fontSize: 9,
+    fontWeight: '400',
+    marginTop: 2,
+    fontStyle: 'italic',
   },
   separator: {
     height: 10,

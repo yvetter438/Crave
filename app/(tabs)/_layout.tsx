@@ -33,13 +33,13 @@ export default function TabLayout() {
           tabBarIcon: ({ color }) => <FontAwesome size={28} name="shopping-cart" color={color} />,
         }}
       />
-      <Tabs.Screen
+      {/* <Tabs.Screen
         name="upload"
         options={{
           title: 'Upload',
           tabBarIcon: ({ color }) => <FontAwesome size={28} name="plus-square-o" color={color} />,
         }}
-      />
+      /> */}
       <Tabs.Screen
         name="profile"
         options={{

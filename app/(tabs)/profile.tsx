@@ -15,6 +15,15 @@ interface Post {
   recipe: string;
 }
 
+//profile type
+interface Profile {
+  id: number;
+  user_id: string;
+  username: string;
+  displayname: string;
+  avatar_url: string | null;
+}
+
 
 export default function Profile() {
   const [modalVisible, setModalVisible] = useState(false);
@@ -23,6 +32,7 @@ export default function Profile() {
   const [posts, setPosts] = useState<Post[]>([]);
   const [loading, setLoading] = useState(true);
   const [ postCount, setPostCount] = useState(0);
+  const [profile, setProfile] = useState<Profile | null>(null);
   const router = useRouter();
 
   useEffect(() => {
@@ -33,6 +43,7 @@ export default function Profile() {
       //  console.log('Session user ID:', session.user.id);
      // console.log('ID match:', session.user.id === 'cdc73b26-3030-42aa-9745-3e9254add7bf');
         fetchUserPosts(session.user.id);
+        fetchProfile(session.user.id);
       }
     });
 
@@ -41,11 +52,40 @@ export default function Profile() {
       setSession(session);
       if (session?.user) {
         fetchUserPosts(session.user.id);
+        fetchProfile(session.user.id);
       }
     });
 
     return () => subscription.unsubscribe();
   }, []);
+
+  const fetchProfile = async (userId: string) => {
+    try {
+      const { data: profileData, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('user_id', userId)
+        .single();
+
+      if (error && error.code !== 'PGRST116') { // PGRST116 = no rows returned
+        console.error('Error fetching profile:', error);
+        return;
+      }
+
+      if (profileData) {
+        setProfile(profileData);
+        // Update the profile image if avatar_url exists
+        if (profileData.avatar_url) {
+          const { data } = supabase.storage
+            .from('avatars')
+            .getPublicUrl(profileData.avatar_url);
+          setImage(data.publicUrl);
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching profile:', error);
+    }
+  };
 
   const fetchUserPosts = async (userId: string) => {
     try {  
@@ -97,19 +137,19 @@ export default function Profile() {
   );
 
 
-  const pickImage = async () => {
-    let result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      allowsEditing: true,
-      aspect: [4, 3],
-      quality: 1,
-    });
+  // const pickImage = async () => {
+  //   let result = await ImagePicker.launchImageLibraryAsync({
+  //     mediaTypes: ImagePicker.MediaTypeOptions.Images,
+  //     allowsEditing: true,
+  //     aspect: [4, 3],
+  //     quality: 1,
+  //   });
 
-    if (!result.canceled) {
-      setImage(result.assets[0].uri);
-      setModalVisible(false); // Close modal after selecting an image
-    }
-  };
+  //   if (!result.canceled) {
+  //     setImage(result.assets[0].uri);
+  //     setModalVisible(false); // Close modal after selecting an image
+  //   }
+  // };
 
   return (
     <View style={styles.container}>
@@ -122,12 +162,17 @@ export default function Profile() {
           <Ionicons name="settings-outline" size={24} color="black" />
         </TouchableOpacity>
       </View>
-      <TouchableOpacity onPress={() => setModalVisible(true)}>
+      {/* <TouchableOpacity onPress={() => setModalVisible(true)}> */}
         <Image source={{ uri: image }} style={styles.profileImage} />
-      </TouchableOpacity>
+      {/* </TouchableOpacity> */}
       <Text style={styles.username}>
-        {session?.user?.email || 'Not logged in'}
+        {profile?.username ? `@${profile.username}` : (session?.user?.email || 'Not logged in')}
       </Text>
+      {profile?.displayname && (
+        <Text style={styles.displayname}>
+          {profile.displayname}
+        </Text>
+      )}
 
       <View style={styles.statsContainer}>
         <View style={styles.stats}>
@@ -157,7 +202,7 @@ export default function Profile() {
         onRefresh={() => session?.user && fetchUserPosts(session.user.id)}
       />
 
-      <Modal
+      {/* <Modal
         transparent={true}
         visible={modalVisible}
         onRequestClose={() => setModalVisible(false)}
@@ -178,7 +223,7 @@ export default function Profile() {
             </TouchableOpacity>
           </TouchableOpacity>
         </TouchableOpacity>
-      </Modal>
+      </Modal> */}
     </View>
   );
 }
@@ -205,6 +250,12 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     textAlign: 'center',
     marginTop: 10,
+  },
+  displayname: {
+    fontSize: 18,
+    color: '#666',
+    textAlign: 'center',
+    marginTop: 5,
   },
   statsContainer: {
     flexDirection: 'row',
