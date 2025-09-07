@@ -135,6 +135,11 @@ useEffect(() => {
     router.push('/(tabs)/shopping');
   }
 
+  const onRestaurantPress = () => {
+    // TODO: Navigate to restaurant page based on video/post data
+    console.log('Restaurant button tapped for post:', post.id);
+  }
+
   const onSharePress = async () => {
     try {
       const shareUrl = 'https://cravesocial.app';
@@ -195,6 +200,15 @@ useEffect(() => {
               activeOpacity={0.7}
             >
               <Ionicons name="bag-outline" size={24} color="white" />
+            </TouchableOpacity>
+            
+            {/* Restaurant button */}
+            <TouchableOpacity 
+              style={styles.actionButton} 
+              onPress={onRestaurantPress}
+              activeOpacity={0.7}
+            >
+              <Ionicons name="storefront-outline" size={24} color="white" />
             </TouchableOpacity>
             
             {/* Recipe button */}
