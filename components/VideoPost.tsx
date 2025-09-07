@@ -1,4 +1,4 @@
-import { View, Text, StyleSheet, Pressable, useWindowDimensions, TouchableOpacity, Image } from 'react-native';
+import { View, Text, StyleSheet, Pressable, useWindowDimensions, TouchableOpacity, Image, Modal, Linking, ScrollView } from 'react-native';
 import { AVPlaybackStatus, ResizeMode, Video, Audio } from 'expo-av';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Ionicons from '@expo/vector-icons/Ionicons';
@@ -21,6 +21,7 @@ type VideoPost = {
         video_url: string;
         description: string;
         user: string;
+        restaurant: number | null;
     };
     activePostId: string;
     shouldPlay: boolean;
@@ -34,6 +35,15 @@ type Profile = {
     avatar_url: string | null;
 };
 
+type Restaurant = {
+    id: number;
+    name: string;
+    cuisine: string;
+    address: string;
+    phone: string;
+    website: string | null;
+};
+
 
 export default function VideoPost({post, activePostId, shouldPlay }: VideoPost) {
   const video = useRef<Video>(null);
@@ -41,6 +51,12 @@ export default function VideoPost({post, activePostId, shouldPlay }: VideoPost) 
   const [isMuted, setIsMuted] = useState(false);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+  const [isLiked, setIsLiked] = useState(false);
+  const [likeCount, setLikeCount] = useState(0);
+  const [isSaved, setIsSaved] = useState(false);
+  const [saveCount, setSaveCount] = useState(0);
+  const [restaurant, setRestaurant] = useState<Restaurant | null>(null);
+  const [restaurantModalVisible, setRestaurantModalVisible] = useState(false);
   const isPlaying = status?.isLoaded && status.isPlaying;
   const { height }= useWindowDimensions();
   const tabBarHeight: number = useBottomTabBarHeight();
@@ -149,6 +165,98 @@ useEffect(() => {
     fetchProfile();
   }, [post.user]);
 
+  // Check like status and count
+  useEffect(() => {
+    const checkLikeStatus = async () => {
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) return;
+
+        // Check if current user liked this post
+        const { data: likeData } = await supabase
+          .from('likes')
+          .select('id')
+          .eq('user_id', user.id)
+          .eq('post_id', post.id)
+          .single();
+
+        setIsLiked(!!likeData);
+
+        // Get like count for this post
+        const { count } = await supabase
+          .from('likes')
+          .select('*', { count: 'exact', head: true })
+          .eq('post_id', post.id);
+
+        setLikeCount(count || 0);
+      } catch (error) {
+        console.error('Error checking like status:', error);
+      }
+    };
+
+    checkLikeStatus();
+  }, [post.id]);
+
+  // Check save status and count
+  useEffect(() => {
+    const checkSaveStatus = async () => {
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) return;
+
+        // Check if current user saved this post
+        const { data: saveData } = await supabase
+          .from('saves')
+          .select('id')
+          .eq('user_id', user.id)
+          .eq('post_id', post.id)
+          .single();
+
+        setIsSaved(!!saveData);
+
+        // Get save count for this post
+        const { count } = await supabase
+          .from('saves')
+          .select('*', { count: 'exact', head: true })
+          .eq('post_id', post.id);
+
+        setSaveCount(count || 0);
+      } catch (error) {
+        console.error('Error checking save status:', error);
+      }
+    };
+
+    checkSaveStatus();
+  }, [post.id]);
+
+  // Fetch restaurant data
+  useEffect(() => {
+    const fetchRestaurant = async () => {
+      if (!post.restaurant) return;
+
+      try {
+        const { data: restaurantData, error } = await supabase
+          .from('restaurants')
+          .select('*')
+          .eq('id', post.restaurant)
+          .single();
+
+        if (error && error.code !== 'PGRST116') {
+          console.error('Error fetching restaurant:', error);
+          return;
+        }
+
+        if (restaurantData) {
+          setRestaurant(restaurantData);
+        }
+      } catch (error) {
+        console.error('Error fetching restaurant:', error);
+      }
+    };
+
+    fetchRestaurant();
+  }, [post.restaurant]);
+
   useEffect(() => {
     if (!video.current) {
         return;
@@ -182,8 +290,9 @@ useEffect(() => {
   }
 
   const onRestaurantPress = () => {
-    // TODO: Navigate to restaurant page based on video/post data
-    console.log('Restaurant button tapped for post:', post.id);
+    if (restaurant) {
+      setRestaurantModalVisible(true);
+    }
   }
 
   const onSharePress = async () => {
@@ -198,6 +307,85 @@ useEffect(() => {
       console.warn('Share failed', e);
     }
   }
+
+  const toggleLike = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      if (isLiked) {
+        // Unlike
+        const { error } = await supabase
+          .from('likes')
+          .delete()
+          .eq('user_id', user.id)
+          .eq('post_id', post.id);
+
+        if (!error) {
+          setIsLiked(false);
+          setLikeCount(prev => prev - 1);
+        }
+      } else {
+        // Like
+        const { error } = await supabase
+          .from('likes')
+          .insert({ user_id: user.id, post_id: post.id });
+
+        if (!error) {
+          setIsLiked(true);
+          setLikeCount(prev => prev + 1);
+        }
+      }
+    } catch (error) {
+      console.error('Error toggling like:', error);
+    }
+  }
+
+  const toggleSave = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      if (isSaved) {
+        // Unsave
+        const { error } = await supabase
+          .from('saves')
+          .delete()
+          .eq('user_id', user.id)
+          .eq('post_id', post.id);
+
+        if (!error) {
+          setIsSaved(false);
+          setSaveCount(prev => prev - 1);
+        }
+      } else {
+        // Save
+        const { error } = await supabase
+          .from('saves')
+          .insert({ user_id: user.id, post_id: post.id });
+
+        if (!error) {
+          setIsSaved(true);
+          setSaveCount(prev => prev + 1);
+        }
+      }
+    } catch (error) {
+      console.error('Error toggling save:', error);
+    }
+  }
+
+  const openPhone = (phone: string) => {
+    Linking.openURL(`tel:${phone}`);
+  };
+
+  const openWebsite = (website: string) => {
+    Linking.openURL(website);
+  };
+
+  const openMaps = (address: string) => {
+    const encodedAddress = encodeURIComponent(address);
+    Linking.openURL(`https://maps.google.com/?q=${encodedAddress}`);
+  };
 
   return (
     <View style={[styles.container, {height: adjustedHeight}]}>
@@ -275,19 +463,33 @@ useEffect(() => {
             {/* Like button */}
             <TouchableOpacity 
               style={styles.actionButton} 
-              onPress={() => {}}
+              onPress={toggleLike}
               activeOpacity={0.7}
             >
-              <Ionicons name="heart-outline" size={24} color="white" />
+              <Ionicons 
+                name={isLiked ? "heart" : "heart-outline"} 
+                size={24} 
+                color={isLiked ? "#ff3040" : "white"} 
+              />
+              {likeCount > 0 && (
+                <Text style={styles.actionCount}>{likeCount}</Text>
+              )}
             </TouchableOpacity>
             
-            {/* Comments button */}
+            {/* Save button */}
             <TouchableOpacity 
               style={styles.actionButton} 
-              onPress={() => {}}
+              onPress={toggleSave}
               activeOpacity={0.7}
             >
-              <Ionicons name="chatbubble-outline" size={24} color="white" />
+              <Ionicons 
+                name={isSaved ? "bookmark" : "bookmark-outline"} 
+                size={24} 
+                color={isSaved ? "#ffa500" : "white"} 
+              />
+              {saveCount > 0 && (
+                <Text style={styles.actionCount}>{saveCount}</Text>
+              )}
             </TouchableOpacity>
             
             {/* Share button */}
@@ -301,7 +503,83 @@ useEffect(() => {
           </View>
         </View>
         </SafeAreaView>
-        </Pressable> 
+        </Pressable>
+
+        {/* Restaurant Modal */}
+        <Modal
+          visible={restaurantModalVisible}
+          transparent={true}
+          animationType="slide"
+          onRequestClose={() => setRestaurantModalVisible(false)}
+        >
+          <View style={styles.modalOverlay}>
+            <View style={styles.restaurantModal}>
+              <View style={styles.modalHeader}>
+                <Text style={styles.modalTitle}>{restaurant?.name}</Text>
+                <TouchableOpacity
+                  style={styles.closeButton}
+                  onPress={() => setRestaurantModalVisible(false)}
+                >
+                  <Ionicons name="close" size={24} color="#666" />
+                </TouchableOpacity>
+              </View>
+
+              <ScrollView style={styles.modalContent}>
+                <View style={styles.restaurantInfo}>
+                  <View style={styles.infoRow}>
+                    <Ionicons name="restaurant" size={20} color="#666" />
+                    <Text style={styles.infoText}>{restaurant?.cuisine}</Text>
+                  </View>
+
+                  <View style={styles.infoRow}>
+                    <Ionicons name="location" size={20} color="#666" />
+                    <Text style={styles.infoText}>{restaurant?.address}</Text>
+                  </View>
+
+                  <View style={styles.infoRow}>
+                    <Ionicons name="call" size={20} color="#666" />
+                    <Text style={styles.infoText}>{restaurant?.phone}</Text>
+                  </View>
+
+                  {restaurant?.website && (
+                    <View style={styles.infoRow}>
+                      <Ionicons name="globe" size={20} color="#666" />
+                      <Text style={styles.infoText}>{restaurant.website}</Text>
+                    </View>
+                  )}
+                </View>
+
+                <View style={styles.actionButtons}>
+                  <TouchableOpacity
+                    style={styles.actionButtonModal}
+                    onPress={() => openPhone(restaurant?.phone || '')}
+                  >
+                    <Ionicons name="call" size={20} color="white" />
+                    <Text style={styles.actionButtonText}>Call</Text>
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    style={styles.actionButtonModal}
+                    onPress={() => openMaps(restaurant?.address || '')}
+                  >
+                    <Ionicons name="navigate" size={20} color="white" />
+                    <Text style={styles.actionButtonText}>Directions</Text>
+                  </TouchableOpacity>
+
+                  {restaurant?.website && (
+                    <TouchableOpacity
+                      style={styles.actionButtonModal}
+                      onPress={() => openWebsite(restaurant.website!)}
+                    >
+                      <Ionicons name="globe" size={20} color="white" />
+                      <Text style={styles.actionButtonText}>Website</Text>
+                    </TouchableOpacity>
+                  )}
+                </View>
+              </ScrollView>
+            </View>
+          </View>
+        </Modal>
     </View>
   );
 }
@@ -366,5 +644,87 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: 'rgba(255, 255, 255, 0.3)',
     marginBottom: 10,
+  },
+  actionCount: {
+    color: 'white',
+    fontSize: 12,
+    fontWeight: 'bold',
+    marginTop: 2,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  restaurantModal: {
+    backgroundColor: 'white',
+    borderRadius: 20,
+    width: '90%',
+    maxHeight: '80%',
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    elevation: 5,
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 20,
+    borderBottomWidth: 1,
+    borderBottomColor: '#eee',
+  },
+  modalTitle: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#333',
+    flex: 1,
+  },
+  closeButton: {
+    padding: 5,
+  },
+  modalContent: {
+    padding: 20,
+  },
+  restaurantInfo: {
+    marginBottom: 20,
+  },
+  infoRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 15,
+  },
+  infoText: {
+    fontSize: 16,
+    color: '#333',
+    marginLeft: 10,
+    flex: 1,
+  },
+  actionButtons: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 10,
+  },
+  actionButtonModal: {
+    backgroundColor: '#007AFF',
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    borderRadius: 8,
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+    minWidth: '45%',
+    justifyContent: 'center',
+  },
+  actionButtonText: {
+    color: 'white',
+    fontSize: 16,
+    fontWeight: '600',
+    marginLeft: 8,
   },
 });

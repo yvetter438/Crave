@@ -49,6 +49,12 @@ const RecipeScreen = () => {
 
         if (error) {
           console.error('Error fetching recipe:', error);
+          // If recipe doesn't exist, set recipe to null to show error page
+          if (error.code === 'PGRST116') {
+            setRecipe(null);
+            return;
+          }
+          // For other errors, you might want to show a different message
           return;
         }
 
@@ -91,7 +97,18 @@ const RecipeScreen = () => {
   }
 
   if (!recipe) {
-    return <Text>Recipe not found.</Text>;
+    return (
+      <View style={styles.errorContainer}>
+        <View style={styles.errorContent}>
+          <Text style={styles.errorIcon}>🍳</Text>
+          <Text style={styles.errorTitle}>Recipe Not Found</Text>
+          <Text style={styles.errorMessage}>
+            This recipe seems to have disappeared from our kitchen! 
+            Don't worry though - there are plenty of other delicious recipes to explore.
+          </Text>
+        </View>
+      </View>
+    );
   }
 
   const renderContent = () => {
@@ -256,6 +273,34 @@ const styles = StyleSheet.create({
     color: '#666',
     textAlign: 'center',
     marginTop: 20,
+  },
+  errorContainer: {
+    flex: 1,
+    backgroundColor: '#f8f8f8',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  errorContent: {
+    alignItems: 'center',
+    maxWidth: 300,
+  },
+  errorIcon: {
+    fontSize: 64,
+    marginBottom: 20,
+  },
+  errorTitle: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#333',
+    marginBottom: 16,
+    textAlign: 'center',
+  },
+  errorMessage: {
+    fontSize: 16,
+    color: '#666',
+    textAlign: 'center',
+    lineHeight: 24,
   },
 });
 
