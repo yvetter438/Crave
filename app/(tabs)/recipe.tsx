@@ -10,6 +10,15 @@ interface Recipe {
   description: string;
   ingredients: string[];
   instructions: string[];
+  user: string;
+}
+
+interface Profile {
+  id: number;
+  user_id: string;
+  username: string;
+  displayname: string;
+  avatar_url: string | null;
 }
 
 
@@ -17,6 +26,7 @@ const RecipeScreen = () => {
   const { width, height } = Dimensions.get('window');
   const { id } = useLocalSearchParams(); /// access the recipe ID passed to the screen
   const [recipe, setRecipe] = useState<Recipe | null>(null);
+  const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading]= useState(true);
   const { activePostId } = useActivePost();
   const [activeTab, setActiveTab] = useState('info');
@@ -33,7 +43,7 @@ const RecipeScreen = () => {
         // Fetch recipe data based on the post's recipe_id
         const { data, error } = await supabase
           .from('recipes')
-          .select('id, title, description, ingredients, instructions')
+          .select('id, title, description, ingredients, instructions, user')
           .eq('id', recipeId)
           .single();
 
@@ -49,7 +59,23 @@ const RecipeScreen = () => {
           description: data.description,
           ingredients: data.ingredients || [],
           instructions: data.instructions || [],
+          user: data.user,
         });
+
+        // Fetch profile data for the recipe author
+        if (data.user) {
+          const { data: profileData, error: profileError } = await supabase
+            .from('profiles')
+            .select('*')
+            .eq('user_id', data.user)
+            .single();
+
+          if (profileError && profileError.code !== 'PGRST116') { // PGRST116 = no rows returned
+            console.error('Error fetching profile:', profileError);
+          } else if (profileData) {
+            setProfile(profileData);
+          }
+        }
       } catch (err) {
         console.error('Unexpected error fetching recipe:', err);
       } finally {
@@ -96,12 +122,12 @@ const RecipeScreen = () => {
             ))}
           </View>
         );
-      case 'nutrition':
-        return (
-          <View style={styles.tabContent}>
-            <Text style={styles.placeholder}>Nutrition information coming soon...</Text>
-          </View>
-        );
+      // case 'nutrition':
+      //   return (
+      //     <View style={styles.tabContent}>
+      //       <Text style={styles.placeholder}>Nutrition information coming soon...</Text>
+      //     </View>
+      //   );
       default:
         return null;
     }
@@ -111,11 +137,13 @@ const RecipeScreen = () => {
     <View style={[styles.container, { width, height }]}>
       <View style={styles.header}>
         <Text style={styles.title}>{recipe?.title}</Text>
-        <Text style={styles.username}>by @{recipe?.username || 'username'}</Text>
+        <Text style={styles.username}>
+          by {profile?.username ? `@${profile.username}` : '@anonymous'}
+        </Text>
       </View>
 
       <View style={styles.tabs}>
-        {['info', 'instructions', 'nutrition'].map((tab) => (
+        {['info', 'instructions'/*, 'nutrition'*/].map((tab) => (
           <TouchableOpacity
             key={tab}
             style={[styles.tab, activeTab === tab && styles.activeTab]}
