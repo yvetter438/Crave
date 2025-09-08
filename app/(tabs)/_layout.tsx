@@ -12,25 +12,11 @@ export default function TabLayout() {
       tabBarActiveTintColor: 'orange'
      }}>
       <Tabs.Screen
-        name="recipe"
-        options={{
-          title: 'Recipe',
-          tabBarIcon: ({ color }) => <FontAwesome size={28} name="bars" color={color} />,
-        }}
-      />
-      <Tabs.Screen
         name="index"
         options={{
           title: 'Feed',
           headerShown: false, //hides the header for tiktokfeed
           tabBarIcon: ({ color }) => <FontAwesome size={28} name="home" color={color} />,
-        }}
-      />
-      <Tabs.Screen
-        name="shopping"
-        options={{
-          title: 'Shop',
-          tabBarIcon: ({ color }) => <FontAwesome size={28} name="shopping-cart" color={color} />,
         }}
       />
       {/* <Tabs.Screen

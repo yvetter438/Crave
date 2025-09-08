@@ -1,3 +1,35 @@
+// COMMENTED OUT FOR MVP - RECIPE SCREEN
+// This file has been simplified for MVP. The original recipe functionality is preserved below.
+
+import React from 'react';
+import { View, Text, StyleSheet } from 'react-native';
+
+const RecipeScreen = () => {
+  return (
+    <View style={styles.container}>
+      <Text style={styles.text}>Recipe feature coming soon!</Text>
+    </View>
+  );
+};
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#f8f8f8',
+  },
+  text: {
+    fontSize: 18,
+    color: '#666',
+  },
+});
+
+export default RecipeScreen;
+
+/*
+ORIGINAL RECIPE SCREEN CODE - PRESERVED FOR FUTURE USE:
+
 import React, { useEffect, useState } from 'react';
 import { View, Text, FlatList, Dimensions, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
 import { useLocalSearchParams } from 'expo-router';
@@ -160,7 +192,7 @@ const RecipeScreen = () => {
       </View>
 
       <View style={styles.tabs}>
-        {['info', 'instructions'/*, 'nutrition'*/].map((tab) => (
+        {['info', 'instructions'].map((tab) => (
           <TouchableOpacity
             key={tab}
             style={[styles.tab, activeTab === tab && styles.activeTab]}
@@ -305,3 +337,4 @@ const styles = StyleSheet.create({
 });
 
 export default RecipeScreen;
+*/

@@ -281,13 +281,14 @@ useEffect(() => {
     } 
   }
 
-  const onRecipePress = () => {
-    router.push(`/(tabs)/recipe?id=${post.id}`);
-  }
+  // COMMENTED OUT FOR MVP
+  // const onRecipePress = () => {
+  //   router.push(`/(tabs)/recipe?id=${post.id}`);
+  // }
 
-  const onShoppingPress = () => {
-    router.push('/(tabs)/shopping');
-  }
+  // const onShoppingPress = () => {
+  //   router.push('/(tabs)/shopping');
+  // }
 
   const onRestaurantPress = () => {
     if (restaurant) {
@@ -433,14 +434,14 @@ useEffect(() => {
           
           {/* Right side button stack */}
           <View style={styles.rightColumn}>
-            {/* Shopping button */}
-            <TouchableOpacity 
+            {/* Shopping button - COMMENTED OUT FOR MVP */}
+            {/* <TouchableOpacity 
               style={styles.actionButton} 
               onPress={onShoppingPress}
               activeOpacity={0.7}
             >
               <Ionicons name="bag-outline" size={24} color="white" />
-            </TouchableOpacity>
+            </TouchableOpacity> */}
             
             {/* Restaurant button */}
             <TouchableOpacity 
@@ -451,14 +452,14 @@ useEffect(() => {
               <Ionicons name="storefront-outline" size={24} color="white" />
             </TouchableOpacity>
             
-            {/* Recipe button */}
-            <TouchableOpacity 
+            {/* Recipe button - COMMENTED OUT FOR MVP */}
+            {/* <TouchableOpacity 
               style={styles.actionButton} 
               onPress={onRecipePress}
               activeOpacity={0.7}
             >
               <Ionicons name="restaurant" size={24} color="white" />
-            </TouchableOpacity>
+            </TouchableOpacity> */}
             
             {/* Like button */}
             <TouchableOpacity 
