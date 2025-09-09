@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, Image, StyleSheet, FlatList, Dimensions, Modal, TouchableOpacity, Alert } from 'react-native';
-import { Video } from 'expo-av';
+// import { Video } from 'expo-av'; // Removed - using Image for thumbnails
 import * as ImagePicker from 'expo-image-picker';
 import { supabase } from '../../lib/supabase';
 import { Session } from '@supabase/supabase-js';
@@ -87,33 +87,30 @@ export default function Profile() {
     }
   };
 
-  const fetchUserPosts = async (userId: string) => {
+  const fetchUserPosts = async (userId: string, limit: number = 20, offset: number = 0) => {
     try {  
-    //  console.log('Fetching posts for user:', userId) //debug log
-      
-      // First try to get all posts
-      const { data: allPosts, error: allPostsError } = await supabase
-        .from('posts')
-        .select('*');
-      
-    //  console.log('All posts:', allPosts) //debug log
-  
-      // Then try with the user filter
+      // OPTIMIZED: Direct user filter query with pagination
       const { data, error } = await supabase
         .from('posts')
-        .select('*')
+        .select('id, video_url, description, created_at')
         .eq('user', userId)
-        .order('created_at', { ascending: false });
+        .order('created_at', { ascending: false })
+        .range(offset, offset + limit - 1);
   
       if (error) {
-        console.error('Supabase error:', error) //debug log
+        console.error('Supabase error:', error);
         throw error;
       }
   
       if (data) {
-      //  console.log('Filtered posts:', data) //debug log
-        setPosts(data);
-        setPostCount(data.length); //counts the number of posts
+        if (offset === 0) {
+          // First load - replace posts
+          setPosts(data);
+        } else {
+          // Load more - append posts
+          setPosts(prevPosts => [...prevPosts, ...data]);
+        }
+        setPostCount(data.length);
       }
     } catch (error) {
       Alert.alert('Error fetching posts');
@@ -124,16 +121,30 @@ export default function Profile() {
   };
 
   const renderPost = ({ item }: { item: Post }) => (
-    <View style={styles.postContainer}>
-      <Video
-        source={{ uri: item.video_url }}
+    <TouchableOpacity 
+      style={styles.postContainer}
+      onPress={() => {
+        // Navigate to video or show in modal
+        console.log('Post tapped:', item.id);
+      }}
+      activeOpacity={0.8}
+    >
+      <Image
+        source={{ 
+          uri: item.video_url,
+          // For video thumbnails, you might want to use a thumbnail service
+          // or generate thumbnails on your backend
+        }}
         style={styles.postThumbnail}
         resizeMode="cover"
-        shouldPlay={false}
-        isLooping
+        // Add loading placeholder
+        defaultSource={require('../../assets/images/icon.png')}
       />
-      
-    </View>
+      {/* Optional: Add play icon overlay */}
+      <View style={styles.playIconOverlay}>
+        <Ionicons name="play" size={20} color="rgba(255,255,255,0.8)" />
+      </View>
+    </TouchableOpacity>
   );
 
 
@@ -154,6 +165,12 @@ export default function Profile() {
   return (
     <View style={styles.container}>
       <View style={styles.header}>
+        <TouchableOpacity
+          style={styles.uploadButton}
+          onPress={() => Alert.alert('Uploads', 'Email "creators@cravesocial.app" to request uploads')}
+        >
+          <Ionicons name="add" size={24} color="black" />
+        </TouchableOpacity>
         <View style={{ flex: 1}} /> 
         <TouchableOpacity 
           style={styles.settingsButton} 
@@ -163,7 +180,13 @@ export default function Profile() {
         </TouchableOpacity>
       </View>
       {/* <TouchableOpacity onPress={() => setModalVisible(true)}> */}
-        <Image source={{ uri: image }} style={styles.profileImage} />
+        {session?.user ? (
+          <Image source={{ uri: image }} style={styles.profileImage} />
+        ) : (
+          <View style={[styles.profileImage, styles.profileImagePlaceholder]}>
+            <Ionicons name="person-outline" size={40} color="#bbb" />
+          </View>
+        )}
       {/* </TouchableOpacity> */}
       <Text style={styles.username}>
         {profile?.username ? `@${profile.username}` : (session?.user?.email || 'Not logged in')}
@@ -191,16 +214,32 @@ export default function Profile() {
         */}
       </View>
 
-      <FlatList
-        data={posts}
-        renderItem={renderPost}
-        keyExtractor={(item) => item.id}
-        numColumns={3}
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={styles.postsContainer}
-        refreshing={loading}
-        onRefresh={() => session?.user && fetchUserPosts(session.user.id)}
-      />
+      {session?.user ? (
+        <FlatList
+          data={posts}
+          renderItem={renderPost}
+          keyExtractor={(item) => item.id.toString()}
+          numColumns={3}
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={styles.postsContainer}
+          refreshing={loading}
+          onRefresh={() => session?.user && fetchUserPosts(session.user.id, 20, 0)}
+          onEndReached={() => {
+            // Load more posts when reaching the end
+            if (session?.user && posts.length > 0) {
+              fetchUserPosts(session.user.id, 20, posts.length);
+            }
+          }}
+          onEndReachedThreshold={0.5}
+          // Performance optimizations
+          removeClippedSubviews={true}
+          maxToRenderPerBatch={10}
+          windowSize={10}
+          initialNumToRender={15}
+        />
+      ) : (
+        <View style={{ height: 20 }} />
+      )}
 
       {/* <Modal
         transparent={true}
@@ -245,6 +284,13 @@ const styles = StyleSheet.create({
     marginTop: 20,
     alignSelf: 'center',
   },
+  profileImagePlaceholder: {
+    backgroundColor: '#eee',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#ddd',
+  },
   username: {
     fontSize: 24,
     fontWeight: 'bold',
@@ -278,11 +324,27 @@ const styles = StyleSheet.create({
     paddingHorizontal: 0,
     marginTop: screenHeight * 0.05,
   },
+  postContainer: {
+    position: 'relative',
+  },
   postThumbnail: {
     width: postSize,
     height: postHeight,
     margin: 2,
     backgroundColor: '#000',
+    borderRadius: 4,
+  },
+  playIconOverlay: {
+    position: 'absolute',
+    top: '50%',
+    left: '50%',
+    transform: [{ translateX: -10 }, { translateY: -10 }],
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    borderRadius: 15,
+    width: 30,
+    height: 30,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   modalOverlay: {
     flex: 1,
@@ -306,7 +368,7 @@ const styles = StyleSheet.create({
   },
   header: {
     flexDirection: 'row',
-    justifyContent: 'flex-end',
+    justifyContent: 'space-between',
     padding: 8,
     paddingTop: 20,
     position: 'absolute',
@@ -318,6 +380,11 @@ const styles = StyleSheet.create({
   settingsButton: {
     padding: 4,
     marginRight: 10,
+    marginTop: 0,
+  },
+  uploadButton: {
+    padding: 4,
+    marginLeft: 10,
     marginTop: 0,
   },
 });
