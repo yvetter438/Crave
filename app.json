@@ -22,8 +22,10 @@
         "NSPhotoLibraryUsageDescription": "This app needs access to photos for uploading images.",
         "NSMicrophoneUsageDescription": "This app needs access to the microphone for videos.",
         "UIRequiredDeviceCapabilities": [
+          "telephony",
           "telephony"
-        ]
+        ],
+        "ITSAppUsesNonExemptEncryption": false
       }
     },
     "android": {
@@ -32,7 +34,6 @@
         "backgroundColor": "#ffffff"
       },
       "permissions": [
-        "android.permission.RECORD_AUDIO",
         "android.permission.RECORD_AUDIO"
       ],
       "package": "com.yvetter.FoodyDemo"
