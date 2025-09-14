@@ -49,6 +49,38 @@ export default function VideoPost({post, activePostId, shouldPlay }: VideoPost) 
   const player = useVideoPlayer(post.video_url, (player) => {
     player.loop = true;
     player.muted = false;
+    
+    // Add error handling
+    player.addListener('error', (error) => {
+      console.error('Video player error:', error);
+      setHasError(true);
+    });
+    
+    player.addListener('statusChange', (status) => {
+      if (status === 'error') {
+        console.error('Video player status error');
+        setHasError(true);
+        setIsLoading(false);
+        if (loadingTimeoutRef.current) {
+          clearTimeout(loadingTimeoutRef.current);
+        }
+      } else if (status === 'readyToPlay') {
+        setHasError(false);
+        setRetryCount(0);
+        setIsLoading(false);
+        if (loadingTimeoutRef.current) {
+          clearTimeout(loadingTimeoutRef.current);
+        }
+      } else if (status === 'loading') {
+        setIsLoading(true);
+        // Set a timeout to detect stuck loading
+        loadingTimeoutRef.current = setTimeout(() => {
+          console.log('Video loading timeout - marking as error');
+          setHasError(true);
+          setIsLoading(false);
+        }, 10000); // 10 second timeout
+      }
+    });
   });
   const [isMuted, setIsMuted] = useState(false);
   const [profile, setProfile] = useState<Profile | null>(null);
@@ -65,7 +97,31 @@ export default function VideoPost({post, activePostId, shouldPlay }: VideoPost) 
   
   // Track playing state manually
   const [isPlaying, setIsPlaying] = useState(false);
+  const [hasError, setHasError] = useState(false);
+  const [retryCount, setRetryCount] = useState(0);
+  const [isLoading, setIsLoading] = useState(true);
+  const maxRetries = 3;
+  const loadingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
+  // Recovery function to refresh the video player
+  const recoverVideoPlayer = () => {
+    if (retryCount < maxRetries) {
+      console.log(`Attempting video recovery, attempt ${retryCount + 1}/${maxRetries}`);
+      setRetryCount(prev => prev + 1);
+      setHasError(false);
+      
+      // Force refresh by recreating the player
+      // This will be handled by the parent component re-rendering
+      setTimeout(() => {
+        if (activePostId === post.id && shouldPlay) {
+          player.play();
+          setIsPlaying(true);
+        }
+      }, 1000);
+    } else {
+      console.log('Max retry attempts reached, video recovery failed');
+    }
+  };
 
   useEffect(() => {
     // Configure audio to play even when device is muted
@@ -94,17 +150,32 @@ useEffect(() => {
   useEffect(() => {
     const isActivePost = activePostId === post.id;
 
-    if (isActivePost && shouldPlay) {
-      player.play();
-      setIsPlaying(true);
+    if (isActivePost && shouldPlay && !hasError) {
+      try {
+        player.play();
+        setIsPlaying(true);
+      } catch (error) {
+        console.error('Error playing video:', error);
+        setHasError(true);
+      }
     } else {
-      player.pause();
-      setIsPlaying(false);
+      try {
+        player.pause();
+        setIsPlaying(false);
+      } catch (error) {
+        console.error('Error pausing video:', error);
+      }
     }
-  }, [activePostId, post.id, shouldPlay]);
+  }, [activePostId, post.id, shouldPlay, hasError]);
 
-
-
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (loadingTimeoutRef.current) {
+        clearTimeout(loadingTimeoutRef.current);
+      }
+    };
+  }, []);
 
 
   // Handle app state changes - just pause/resume, no refresh
@@ -271,14 +342,29 @@ useEffect(() => {
   }, [activePostId, post.id]);
   
   const onPress = () => {
-    if (isPlaying) {
-      player.pause();
-      setIsPlaying(false);
+    if (hasError) {
+      // If there's an error, try to recover
+      recoverVideoPlayer();
+      return;
     }
-    else {
-      player.play();
-      setIsPlaying(true);
-    } 
+    
+    if (isPlaying) {
+      try {
+        player.pause();
+        setIsPlaying(false);
+      } catch (error) {
+        console.error('Error pausing video on tap:', error);
+        setHasError(true);
+      }
+    } else {
+      try {
+        player.play();
+        setIsPlaying(true);
+      } catch (error) {
+        console.error('Error playing video on tap:', error);
+        setHasError(true);
+      }
+    }
   }
 
   // COMMENTED OUT FOR MVP
@@ -357,10 +443,16 @@ useEffect(() => {
         }
       } else {
         console.log('Liking post');
-        // Like
+        // Like with upsert to handle duplicates gracefully
         const { error } = await supabase
           .from('likes')
-          .insert({ user_id: user.id, post_id: post.id });
+          .upsert(
+            { user_id: user.id, post_id: post.id },
+            { 
+              onConflict: 'user_id,post_id',
+              ignoreDuplicates: true 
+            }
+          );
 
         if (!error) {
           setIsLiked(true);
@@ -448,10 +540,14 @@ useEffect(() => {
         colors={['transparent', 'rgba(0,0,0,0.8)']}
         style={[StyleSheet.absoluteFill, styles.overlay]}
       />
-      {!isPlaying && (<Ionicons style={{ position: 'absolute', alignSelf: 'center', top: '50%'}}
-        name="play"
-        size={70} 
-        color="rgba(255,255,255,0.7)" /> )}
+      {!isPlaying && (
+        <Ionicons 
+          style={{ position: 'absolute', alignSelf: 'center', top: '50%'}}
+          name={hasError ? "refresh" : "play"}
+          size={70} 
+          color="rgba(255,255,255,0.7)" 
+        />
+      )}
       <SafeAreaView style={{ flex: 1}}>
          <View style={styles.footer}>
           {/* bottom: caption */}

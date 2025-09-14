@@ -455,7 +455,7 @@ export default function Settings() {
           </Text>
         </TouchableOpacity>
 
-        <View style={styles.inputContainer}>
+        <View style={[styles.inputContainer, styles.inputContainerWithTopMargin]}>
           <Text style={styles.inputLabel}>Display Name</Text>
           <TextInput
             style={[styles.textInput, displaynameError ? styles.inputError : null]}
@@ -551,6 +551,9 @@ const styles = StyleSheet.create({
   },
   inputContainer: {
     marginBottom: 16,
+  },
+  inputContainerWithTopMargin: {
+    marginTop: 24,
   },
   inputLabel: {
     fontSize: 16,
