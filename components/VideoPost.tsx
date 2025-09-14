@@ -1,5 +1,5 @@
-import { View, Text, StyleSheet, Pressable, useWindowDimensions, TouchableOpacity, Image, Modal, Linking, ScrollView } from 'react-native';
-import { AVPlaybackStatus, ResizeMode, Video, Audio } from 'expo-av';
+import { View, Text, StyleSheet, Pressable, useWindowDimensions, TouchableOpacity, Image, Modal, Linking, ScrollView, AppState } from 'react-native';
+import { VideoView, useVideoPlayer } from 'expo-video';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -46,8 +46,10 @@ type Restaurant = {
 
 
 export default function VideoPost({post, activePostId, shouldPlay }: VideoPost) {
-  const video = useRef<Video>(null);
-  const [status, setStatus] = useState<AVPlaybackStatus>();
+  const player = useVideoPlayer(post.video_url, (player) => {
+    player.loop = true;
+    player.muted = false;
+  });
   const [isMuted, setIsMuted] = useState(false);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
@@ -57,42 +59,32 @@ export default function VideoPost({post, activePostId, shouldPlay }: VideoPost) 
   const [saveCount, setSaveCount] = useState(0);
   const [restaurant, setRestaurant] = useState<Restaurant | null>(null);
   const [restaurantModalVisible, setRestaurantModalVisible] = useState(false);
-  const isPlaying = status?.isLoaded && status.isPlaying;
   const { height }= useWindowDimensions();
   const tabBarHeight: number = useBottomTabBarHeight();
   const adjustedHeight: number = height - tabBarHeight;
+  
+  // Track playing state manually
+  const [isPlaying, setIsPlaying] = useState(false);
 
 
   useEffect(() => {
-    if (!video.current) {
-      return;
-    }
-
     // Configure audio to play even when device is muted
-    Audio.setAudioModeAsync({
-      playsInSilentModeIOS: true, // Corrected property name
-      staysActiveInBackground: false,
-      shouldDuckAndroid: true
-    });
+    player.muted = false;
 
     // Check if device is in silent mode (iOS only)
     if (Platform.OS === 'ios') {
-      // Remove the getIsMutedAsync check since it's not available
       setIsMuted(true); // Start muted on iOS silent mode
     }
   }, []);
 
 // Handle volume button changes only when in silent mode
-// Handle volume button changes only when in silent mode
 useEffect(() => {
-  if (status?.isLoaded && isMuted) {
-    const playbackStatus = status as AVPlaybackStatusSuccess;
-    // When volume is adjusted (volume will be > 0), unmute the video
-    if (playbackStatus.volume > 0) {
-      setIsMuted(false);
-    }
+  if (isMuted) {
+    // When volume is adjusted, unmute the video
+    player.muted = false;
+    setIsMuted(false);
   }
-}, [status]);
+}, [isMuted]);
 
 
 
@@ -100,16 +92,14 @@ useEffect(() => {
 
 
   useEffect(() => {
-    if (!video.current) {
-      return;
-    }
-
     const isActivePost = activePostId === post.id;
 
     if (isActivePost && shouldPlay) {
-      video.current.playAsync();
+      player.play();
+      setIsPlaying(true);
     } else {
-      video.current.pauseAsync();
+      player.pause();
+      setIsPlaying(false);
     }
   }, [activePostId, post.id, shouldPlay]);
 
@@ -117,18 +107,30 @@ useEffect(() => {
 
 
 
+  // Handle app state changes - just pause/resume, no refresh
   useEffect(() => {
-    if (!video.current) {
-        return;
-    }
-
-    // Cleanup function to ensure video is unloaded when component unmounts
-    return () => {
-      if (video.current) {
-        video.current.unloadAsync();
+    const handleAppStateChange = (nextAppState: string) => {
+      if (nextAppState === 'background' || nextAppState === 'inactive') {
+        // Pause video when app goes to background
+        player.pause();
+        setIsPlaying(false);
+      } else if (nextAppState === 'active') {
+        // Resume video when app comes back to foreground (only if this is the active post)
+        if (activePostId === post.id && shouldPlay) {
+          player.play();
+          setIsPlaying(true);
+        }
       }
     };
-  }, []); // Empty dependency array to run only on mount/unmount
+
+    const subscription = AppState.addEventListener('change', handleAppStateChange);
+    
+    return () => {
+      subscription?.remove();
+    };
+  }, [activePostId, post.id, shouldPlay]);
+
+  // No video player refreshing - just pause/resume like TikTok
 
   // Fetch profile data for the post author
   useEffect(() => {
@@ -258,26 +260,24 @@ useEffect(() => {
   }, [post.restaurant]);
 
   useEffect(() => {
-    if (!video.current) {
-        return;
-    }
     if (activePostId != post.id) {
-        video.current.pauseAsync();
+        player.pause();
+        setIsPlaying(false);
     }
     if (activePostId == post.id) {
-        video.current.playAsync();
+        player.play();
+        setIsPlaying(true);
     }
   }, [activePostId, post.id]);
   
   const onPress = () => {
-    if (!video.current) {
-      return;
-    }
     if (isPlaying) {
-      video.current.pauseAsync();
+      player.pause();
+      setIsPlaying(false);
     }
     else {
-      video.current.playAsync();
+      player.play();
+      setIsPlaying(true);
     } 
   }
 
@@ -298,23 +298,49 @@ useEffect(() => {
 
   const onSharePress = async () => {
     try {
-      const shareUrl = 'https://cravesocial.app';
+      // Pause video before sharing
+      player.pause();
+      setIsPlaying(false);
+      
+      const shareUrl = 'https://apps.apple.com/us/app/crave-discover-eat-share/id6740149234';
       await Share.share({
-        message: `Check out Crave: ${shareUrl}`,
+        message: `Check out Crave - Discover new eats in your city! ${shareUrl}`,
         url: shareUrl,
-        title: 'Crave',
+        title: 'Crave: Discover, Eat, Share',
       });
+      
+      // Resume video after sharing if this is still the active post
+      setTimeout(() => {
+        if (activePostId === post.id && shouldPlay) {
+          player.play();
+          setIsPlaying(true);
+        }
+      }, 500); // Give time for share modal to fully close
     } catch (e) {
       console.warn('Share failed', e);
+      // Resume video even if share failed
+      setTimeout(() => {
+        if (activePostId === post.id && shouldPlay) {
+          player.play();
+          setIsPlaying(true);
+        }
+      }, 500);
     }
   }
 
   const toggleLike = async () => {
     try {
+      console.log('toggleLike called');
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
+      console.log('User:', user?.id);
+      
+      if (!user) {
+        console.log('No user found, cannot like');
+        return;
+      }
 
       if (isLiked) {
+        console.log('Unliking post');
         // Unlike
         const { error } = await supabase
           .from('likes')
@@ -325,8 +351,12 @@ useEffect(() => {
         if (!error) {
           setIsLiked(false);
           setLikeCount(prev => prev - 1);
+          console.log('Successfully unliked');
+        } else {
+          console.error('Error unliking:', error);
         }
       } else {
+        console.log('Liking post');
         // Like
         const { error } = await supabase
           .from('likes')
@@ -335,6 +365,9 @@ useEffect(() => {
         if (!error) {
           setIsLiked(true);
           setLikeCount(prev => prev + 1);
+          console.log('Successfully liked');
+        } else {
+          console.error('Error liking:', error);
         }
       }
     } catch (error) {
@@ -344,10 +377,17 @@ useEffect(() => {
 
   const toggleSave = async () => {
     try {
+      console.log('toggleSave called');
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
+      console.log('User:', user?.id);
+      
+      if (!user) {
+        console.log('No user found, cannot save');
+        return;
+      }
 
       if (isSaved) {
+        console.log('Unsaving post');
         // Unsave
         const { error } = await supabase
           .from('saves')
@@ -358,8 +398,12 @@ useEffect(() => {
         if (!error) {
           setIsSaved(false);
           setSaveCount(prev => prev - 1);
+          console.log('Successfully unsaved');
+        } else {
+          console.error('Error unsaving:', error);
         }
       } else {
+        console.log('Saving post');
         // Save
         const { error } = await supabase
           .from('saves')
@@ -368,6 +412,9 @@ useEffect(() => {
         if (!error) {
           setIsSaved(true);
           setSaveCount(prev => prev + 1);
+          console.log('Successfully saved');
+        } else {
+          console.error('Error saving:', error);
         }
       }
     } catch (error) {
@@ -390,16 +437,11 @@ useEffect(() => {
 
   return (
     <View style={[styles.container, {height: adjustedHeight}]}>
-      <Video 
-        ref={video}
-        source= {{uri: post.video_url }}
+      <VideoView 
+        player={player}
         style={[StyleSheet.absoluteFill, styles.video]}
-        resizeMode={ResizeMode.COVER}
-        onPlaybackStatusUpdate={setStatus}
-        isLooping
-        isMuted={false}
-        volume={1.0}
-         />
+        contentFit="cover"
+      />
 
        <Pressable onPress={onPress} style={styles.content}>
       <LinearGradient 
@@ -448,6 +490,7 @@ useEffect(() => {
               style={styles.actionButton} 
               onPress={onRestaurantPress}
               activeOpacity={0.7}
+              pointerEvents="auto"
             >
               <Ionicons name="storefront-outline" size={24} color="white" />
             </TouchableOpacity>
@@ -466,6 +509,7 @@ useEffect(() => {
               style={styles.actionButton} 
               onPress={toggleLike}
               activeOpacity={0.7}
+              pointerEvents="auto"
             >
               <Ionicons 
                 name={isLiked ? "heart" : "heart-outline"} 
@@ -482,6 +526,7 @@ useEffect(() => {
               style={styles.actionButton} 
               onPress={toggleSave}
               activeOpacity={0.7}
+              pointerEvents="auto"
             >
               <Ionicons 
                 name={isSaved ? "bookmark" : "bookmark-outline"} 
@@ -498,6 +543,7 @@ useEffect(() => {
               style={styles.actionButton} 
               onPress={onSharePress}
               activeOpacity={0.7}
+              pointerEvents="auto"
             >
               <Ionicons name="share-outline" size={24} color="white" />
             </TouchableOpacity>

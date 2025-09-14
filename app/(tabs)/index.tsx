@@ -1,5 +1,5 @@
 import VideoPost from '@/components/VideoPost';
-import { View,  StyleSheet, FlatList  } from 'react-native';
+import { View,  StyleSheet, FlatList, AppState  } from 'react-native';
 import { useState, useRef, useEffect, useCallback } from 'react';
 // COMMENTED OUT: Gesture handler imports since we're not using swipe anymore
 // import { GestureHandlerRootView, Gesture, GestureDetector } from 'react-native-gesture-handler';
@@ -27,6 +27,19 @@ export default function Tab() {
       };
     }, [])
   );
+
+  // Handle app state changes
+  useEffect(() => {
+    const handleAppStateChange = (nextAppState: string) => {
+      setIsAppActive(nextAppState === 'active');
+    };
+
+    const subscription = AppState.addEventListener('change', handleAppStateChange);
+    
+    return () => {
+      subscription?.remove();
+    };
+  }, []);
 
 
   
