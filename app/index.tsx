@@ -1,4 +1,4 @@
-import { Text, View, TextInput, StyleSheet, Dimensions, Pressable, KeyboardAvoidingView, Platform, TouchableWithoutFeedback, Keyboard, Alert } from "react-native";
+import { Text, View, TextInput, StyleSheet, Dimensions, Pressable, KeyboardAvoidingView, Platform, TouchableWithoutFeedback, Keyboard, Alert, ActivityIndicator } from "react-native";
 import { Link, useRouter } from 'expo-router';
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
@@ -6,6 +6,7 @@ import { Colors, Gradients } from '@/constants/Colors';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import Svg, { Image, Ellipse, ClipPath } from 'react-native-svg';
 import { AppleSignIn } from '@/components/AppleSignIn';
+import { useAuth } from '@/contexts/AuthContext';
 
 
 export default function Index() {
@@ -15,11 +16,19 @@ export default function Index() {
   const [showLoginOptions, setShowLoginOptions] = useState(false);
   const [showEmailForm, setShowEmailForm] = useState(false);
   const router = useRouter();
+  const { session, loading: authLoading } = useAuth();
 
   //supabase logic
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
+
+  // Check if user is already logged in and redirect to main app
+  useEffect(() => {
+    if (!authLoading && session) {
+      router.replace('/(tabs)');
+    }
+  }, [session, authLoading]);
 
 
   async function signInWithEmail() {
@@ -110,6 +119,30 @@ export default function Index() {
 
   const backToMainHandler = () => {
     setShowRegistrationOptions(false);
+  }
+
+  // Show loading screen while checking auth state
+  if (authLoading) {
+    return (
+      <View style={styles.loadingContainer}>
+        <View style={[StyleSheet.absoluteFill, styles.backgroundContainer]}>
+          <Svg height={height + 100} width={width}>
+            <ClipPath id="clipPathId">
+              <Ellipse cx={width / 2} rx={height} ry={height + 100} />
+            </ClipPath>
+            <Image 
+              href={require('.././assets/images/login-background.png')}
+              width={width + 100} 
+              height={height + 100}
+              preserveAspectRatio="xMidYMid slice"
+              x={-50}
+              clipPath="url(#clipPathId)"
+            />
+          </Svg>
+        </View>
+        <ActivityIndicator size="large" color={Colors.primary} />
+      </View>
+    );
   }
 
   return (
@@ -275,6 +308,11 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     justifyContent: "flex-end",
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
   },
   button: {
     backgroundColor: Colors.primary,

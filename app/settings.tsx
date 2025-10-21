@@ -4,6 +4,7 @@ import { useRouter } from 'expo-router';
 import { supabase } from '../lib/supabase';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface Profile {
   id: number;
@@ -15,6 +16,7 @@ interface Profile {
 
 export default function Settings() {
   const router = useRouter();
+  const { signOut } = useAuth();
   const [profile, setProfile] = useState<Profile | null>(null);
   const [username, setUsername] = useState('');
   const [usernameError, setUsernameError] = useState('');
@@ -311,11 +313,12 @@ export default function Settings() {
   };
 
   const handleLogout = async () => {
-    const { error } = await supabase.auth.signOut();
-    if (error) {
-      Alert.alert('Error logging out');
-    } else {
+    try {
+      await signOut();
       router.replace('/');
+    } catch (error) {
+      console.error('Error logging out:', error);
+      Alert.alert('Error', 'Failed to log out. Please try again.');
     }
   };
 
