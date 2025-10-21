@@ -2,103 +2,25 @@ import { Text, View, TextInput, StyleSheet, Dimensions, Pressable, KeyboardAvoid
 import { Link, useRouter } from 'expo-router';
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
+import { Colors, Gradients } from '@/constants/Colors';
+import Ionicons from '@expo/vector-icons/Ionicons';
 import Svg, { Image, Ellipse, ClipPath } from 'react-native-svg';
-import Animated, { 
-    useSharedValue,
-    useAnimatedStyle,
-    interpolate,
-    withTiming,
-    withDelay,
-    runOnJS,
-    withSequence,
-    withSpring,
-    withRepeat,
-    } from 'react-native-reanimated';
+import { AppleSignIn } from '@/components/AppleSignIn';
 
 
 export default function Index() {
   const { height, width } = Dimensions.get("window");
-  const imagePosition = useSharedValue(1);
-  const formButtonScale = useSharedValue(1);
   const [isRegistering, setIsRegistering] = useState(false);
+  const [showRegistrationOptions, setShowRegistrationOptions] = useState(false);
+  const [showLoginOptions, setShowLoginOptions] = useState(false);
+  const [showEmailForm, setShowEmailForm] = useState(false);
   const router = useRouter();
-  const shimmer = useSharedValue(0);
 
   //supabase logic
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
 
-  useEffect(() => {
-    shimmer.value = withRepeat(
-      withSequence(
-        withTiming(1, { duration: 2000 }),
-        withTiming(0, { duration: 2000 })
-      ),
-      -1, // -1 means infinite repeat
-      true // reverse the animation
-    );
-  }, []);
-
-  // Add this with your other animated styles
-  const shimmerStyle = useAnimatedStyle(() => {
-    return {
-      position: 'absolute',
-      top: 0,
-      left: 0,
-      right: 0,
-      bottom: 0,
-      opacity: 0.2,
-      backgroundColor: 'rgba(255, 255, 255, 0.2)',
-      transform: [{
-        translateX: interpolate(
-          shimmer.value,
-          [0, 1],
-          [-width, width]
-        ),
-      }],
-    };
-  });
-
-
-
-  const imageAnimatedStyle = useAnimatedStyle(() => {
-    const interpolation = interpolate(imagePosition.value, [0, 1], [-height * .52, 0])
-    return {
-      transform: [{translateY: withTiming(interpolation, {duration: 1000})}],
-      zIndex: -1
-    }
-  })
-
-  const buttonsAnimatedStyle = useAnimatedStyle(() => {
-    const interpolation = interpolate(imagePosition.value, [0, 1], [250, 0])
-    return {
-      opacity: withTiming(imagePosition.value, {duration: 500}),
-      transform: [{translateY: withTiming(interpolation, {duration: 1000})}]
-    }
-  })
-
-  const closeButtonContainerStyle = useAnimatedStyle(() => {
-    const interpolation = interpolate(imagePosition.value, [0, 1], [180, 360])
-    return {
-      opacity: withTiming(imagePosition.value === 1 ? 0: 1, {duration: 800}),
-      transform: [{rotate: withTiming(interpolation + "deg", {duration: 1000})}]
-    }
-  })
-
-  const formAnimatedStyle = useAnimatedStyle(() => {
-    return {
-      opacity: imagePosition.value === 0 
-      ? withDelay(400, withTiming(1, {duration: 800})) 
-      : withTiming(0, {duration: 300})
-    }
-  })
-
-  const formButtonAnimatedStyle = useAnimatedStyle(() => {
-    return {
-      transform: [{scale: formButtonScale.value}]
-    }
-  })
 
   async function signInWithEmail() {
     setLoading(true);
@@ -110,10 +32,7 @@ export default function Index() {
     if (error) {
       Alert.alert(error.message);
     } else {
-      formButtonScale.value = withSequence(withSpring(1.5), withSpring(1));
-      setTimeout(() => {
-        router.push('./(tabs)');
-      }, 800);
+      router.push('./(tabs)');
     }
     setLoading(false);
   }
@@ -137,136 +56,216 @@ export default function Index() {
 
 
   const guestLoginHandler = () => {
-    // Animate the button
-    formButtonScale.value = withSequence(withSpring(1.5), withSpring(1));
-    setTimeout(() => {
-      router.push('./(tabs)');
-    }, 800);
+    router.push('./(tabs)');
   };
 
 
   const loginHandler = () => {
-    imagePosition.value = 0;
-    if (isRegistering) {
-      setIsRegistering(false);
-      runOnJS(setIsRegistering)(false);
-    } 
+    setShowLoginOptions(true);
+  }
 
-    // setTimeout(() => {
-    //   router.push('./auth/authIndex');
-    // }, 1000);
+  const emailLoginHandler = () => {
+    setIsRegistering(false);
+    setShowLoginOptions(false);
+    setShowRegistrationOptions(false);
+    setShowEmailForm(true);
+  }
+
+
+  const backToMainFromLoginHandler = () => {
+    setShowLoginOptions(false);
+  }
+
+  const backToMainFromEmailForm = () => {
+    setShowEmailForm(false);
+    setShowRegistrationOptions(false);
+    setShowLoginOptions(false);
+    setEmail('');
+    setPassword('');
   }
 
   const registerHandler = () => {
-    imagePosition.value = 0;
-    if (!isRegistering) {
-      setIsRegistering(true);
-      runOnJS(setIsRegistering)(true);
-    }
-    // setTimeout(() => {
-    //   router.push('./auth/authIndex');
-    // }, 1000);
+    setShowRegistrationOptions(true);
+  }
+
+  const emailRegisterHandler = () => {
+    setIsRegistering(true);
+    setShowRegistrationOptions(false);
+    setShowLoginOptions(false);
+    setShowEmailForm(true);
+  }
+
+  const handleAppleSignInSuccess = () => {
+    // Clear all states and navigate to main app
+    setShowRegistrationOptions(false);
+    setShowLoginOptions(false);
+    setShowEmailForm(false);
+    router.push('./(tabs)');
+  }
+
+  const handleAppleSignInError = (error: string) => {
+    console.error('Apple Sign In Error:', error);
+    // Error is already handled in the AppleSignIn component
+  }
+
+  const backToMainHandler = () => {
+    setShowRegistrationOptions(false);
   }
 
   return (
-    
     <KeyboardAvoidingView
-    style={styles.container} 
-    behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-    keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
-  >
-    <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
-    <Animated.View style={styles.container}>
-      <Animated.View style={[StyleSheet.absoluteFill, imageAnimatedStyle]}>
-        <Svg height={height + 100} width={width}>
-          <ClipPath id="clipPathId">
-            <Ellipse cx={width / 2} rx={height} ry={height + 100} />
-          </ClipPath>
-          <Image 
-          href={require('.././assets/images/login-background.png')}
-          width={width + 100} 
-          height={height + 100}
-          preserveAspectRatio="xMidYMid slice"
-          x={-50}
-          clipPath="url(#clipPathId)"
-          />
-          {/*  <Animated.View style={shimmerStyle} /> */}
-        </Svg>
-        <Animated.View style={[styles.closeButtonContainer, closeButtonContainerStyle]}>
-        <Pressable 
-            style={styles.closeButton}
-            onPress={() => imagePosition.value = 1}
-          >
-            <Text style={styles.closeButtonText}>X</Text>
-          </Pressable>
-        </Animated.View>
-      </Animated.View>
-      <View style={styles.bottomContainer}>
-        <Animated.View style={buttonsAnimatedStyle}>
-          {/*   Guest Login Button*/    }
-          <Pressable style={styles.button} onPress={guestLoginHandler}>
-            <Text style={[styles.buttonText, styles.guestButtonText]}>BROWSE AS GUEST</Text>
-            </Pressable>
+      style={styles.container} 
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
+    >
+      <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
+        <View style={styles.container}>
+          <View style={[StyleSheet.absoluteFill, styles.backgroundContainer]}>
+            <Svg height={height + 100} width={width}>
+              <ClipPath id="clipPathId">
+                <Ellipse cx={width / 2} rx={height} ry={height + 100} />
+              </ClipPath>
+              <Image 
+                href={require('.././assets/images/login-background.png')}
+                width={width + 100} 
+                height={height + 100}
+                preserveAspectRatio="xMidYMid slice"
+                x={-50}
+                clipPath="url(#clipPathId)"
+              />
+            </Svg>
+          </View>
           
-          <Pressable style={styles.button} onPress={loginHandler}>
-            <Text style={styles.buttonText}>LOG IN</Text>
-          </Pressable>
-        </Animated.View>
-        <Animated.View style={buttonsAnimatedStyle}>
-          <Pressable style={styles.button} onPress={registerHandler}>
-            <Text style={styles.buttonText}>REGISTER</Text>
-          </Pressable>
-        </Animated.View>
-        
-        <Animated.View style={[styles.formInputContainer, formAnimatedStyle]}>
-          <TextInput 
-            placeholder="Email" 
-            placeholderTextColor="black" 
-            style={styles.textInput}
-            onChangeText={(text) => setEmail(text)}
-            value={email}
-            autoCapitalize="none"
-          />
-          {/*}
-          {isRegistering && (
-          <TextInput 
-            placeholder="Full Name"  
-            placeholderTextColor="black" 
-            style={styles.textInput}
-          />
-          )}
-            */}
-          <TextInput 
-            placeholder="Password"  
-            placeholderTextColor="black" 
-            style={styles.textInput}
-            onChangeText={(text) => setPassword(text)}
-            value={password}
-            secureTextEntry={true}
-            autoCapitalize="none"
-          />
-          <Animated.View style={[styles.formButton, formButtonAnimatedStyle]}>
-            <Pressable 
-              style={styles.button} 
-               // {width: width - 40}, 
-               // {backgroundColor: 'rgba(0,255,0,0.2)'} debug for button width
+          {showEmailForm ? (
+            <View style={styles.emailFormContainer}>
+              <View style={styles.emailFormHeader}>
+                <Pressable style={styles.backButtonHeader} onPress={backToMainFromEmailForm}>
+                  <Ionicons name="arrow-back" size={24} color={Colors.textInverse} />
+                </Pressable>
+                <Text style={styles.emailFormTitle}>
+                  {isRegistering ? 'Create Account' : 'Welcome Back'}
+                </Text>
+                <View style={{ width: 24 }} />
+              </View>
               
-              onPress={() => {
-                formButtonScale.value = withSequence(withSpring(1.5), withSpring(1));
-                if (isRegistering) {
-                  signUpWithEmail();
-                } else {
-                  signInWithEmail();
-                }
-              }}>
-              <Text style={styles.buttonText}>{isRegistering ? 'REGISTER' : 'LOG IN'}</Text>
-            </Pressable>
-          </Animated.View>
-        </Animated.View> 
-      </View>
-    </Animated.View>
-    
-    </TouchableWithoutFeedback>
+              <View style={styles.emailFormContent}>
+                <TextInput 
+                  placeholder="Email" 
+                  placeholderTextColor={Colors.textSecondary} 
+                  style={styles.emailFormInput}
+                  onChangeText={(text) => setEmail(text)}
+                  value={email}
+                  autoCapitalize="none"
+                  keyboardType="email-address"
+                />
+                
+                <TextInput 
+                  placeholder="Password"  
+                  placeholderTextColor={Colors.textSecondary} 
+                  style={styles.emailFormInput}
+                  onChangeText={(text) => setPassword(text)}
+                  value={password}
+                  secureTextEntry={true}
+                  autoCapitalize="none"
+                />
+                
+                <Pressable 
+                  style={styles.emailFormSubmitButton} 
+                  onPress={() => {
+                    if (isRegistering) {
+                      signUpWithEmail();
+                    } else {
+                      signInWithEmail();
+                    }
+                  }}
+                >
+                  <Text style={styles.emailFormSubmitText}>
+                    {loading ? 'Loading...' : (isRegistering ? 'CREATE ACCOUNT' : 'SIGN IN')}
+                  </Text>
+                </Pressable>
+                
+                <Pressable 
+                  style={styles.switchModeButton}
+                  onPress={() => {
+                    setIsRegistering(!isRegistering);
+                    setEmail('');
+                    setPassword('');
+                  }}
+                >
+                  <Text style={styles.switchModeText}>
+                    {isRegistering ? 'Already have an account? Sign In' : "Don't have an account? Sign Up"}
+                  </Text>
+                </Pressable>
+              </View>
+            </View>
+          ) : (
+            <View style={styles.bottomContainer}>
+              {!showRegistrationOptions && !showLoginOptions ? (
+                <>
+                  <View style={styles.buttonContainer}>
+                    <Pressable style={[styles.button, styles.guestButton]} onPress={guestLoginHandler}>
+                      <Text style={[styles.buttonText, styles.guestButtonText]}>BROWSE AS GUEST</Text>
+                    </Pressable>
+                    
+                    <Pressable style={styles.button} onPress={loginHandler}>
+                      <Text style={styles.buttonText}>LOG IN</Text>
+                    </Pressable>
+                  </View>
+                  <View style={styles.buttonContainer}>
+                    <Pressable style={styles.button} onPress={registerHandler}>
+                      <Text style={styles.buttonText}>REGISTER</Text>
+                    </Pressable>
+                  </View>
+                </>
+              ) : showRegistrationOptions ? (
+                <View style={styles.buttonContainer}>
+                  <View style={styles.optionsHeader}>
+                    <Pressable style={styles.optionsBackButton} onPress={backToMainHandler}>
+                      <Ionicons name="arrow-back" size={24} color={Colors.textInverse} />
+                    </Pressable>
+                    <Text style={styles.registrationTitle}>Choose how to sign up</Text>
+                    <View style={{ width: 24 }} />
+                  </View>
+                  
+                  <Pressable style={styles.button} onPress={emailRegisterHandler}>
+                    <Ionicons name="mail-outline" size={20} color={Colors.textInverse} style={styles.buttonIcon} />
+                    <Text style={styles.buttonText}>Continue with Email</Text>
+                  </Pressable>
+                  
+                  <View style={styles.appleButtonContainer}>
+                    <AppleSignIn 
+                      onSuccess={handleAppleSignInSuccess}
+                      onError={handleAppleSignInError}
+                    />
+                  </View>
+                </View>
+              ) : (
+                <View style={styles.buttonContainer}>
+                  <View style={styles.optionsHeader}>
+                    <Pressable style={styles.optionsBackButton} onPress={backToMainFromLoginHandler}>
+                      <Ionicons name="arrow-back" size={24} color={Colors.textInverse} />
+                    </Pressable>
+                    <Text style={styles.registrationTitle}>Choose how to sign in</Text>
+                    <View style={{ width: 24 }} />
+                  </View>
+                  
+                  <Pressable style={styles.button} onPress={emailLoginHandler}>
+                    <Ionicons name="mail-outline" size={20} color={Colors.textInverse} style={styles.buttonIcon} />
+                    <Text style={styles.buttonText}>Continue with Email</Text>
+                  </Pressable>
+                  
+                  <View style={styles.appleButtonContainer}>
+                    <AppleSignIn 
+                      onSuccess={handleAppleSignInSuccess}
+                      onError={handleAppleSignInError}
+                    />
+                  </View>
+                </View>
+              )}
+            </View>
+          )}
+        </View>
+      </TouchableWithoutFeedback>
     </KeyboardAvoidingView>
   );
 }
@@ -278,7 +277,7 @@ const styles = StyleSheet.create({
     justifyContent: "flex-end",
   },
   button: {
-    backgroundColor: 'rgba(123, 104, 238, 0.8',
+    backgroundColor: Colors.primary,
     height: 55,
     alignItems: 'center',
     justifyContent: 'center',
@@ -286,31 +285,49 @@ const styles = StyleSheet.create({
     marginHorizontal: 20,
     marginVertical: 10,
     borderWidth: 1,
-    borderColor: 'white',
+    borderColor: Colors.primary,
     width: width - 40,
-    
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    elevation: 5,
+    flexDirection: 'row',
+    gap: 8,
   }, 
   buttonText: {
     fontSize: 20,
     fontWeight: '600',
-    color: 'white',
+    color: Colors.textInverse,
     letterSpacing: 0.5
   },
   bottomContainer: {
-    justifyContent: 'center',
-    height: height / 3,
+    justifyContent: 'flex-end',
+    height: height / 2.2,
+    paddingBottom: 60,
+  },
+  backgroundContainer: {
+    zIndex: -1,
+  },
+  buttonContainer: {
+    marginBottom: 20,
   },
   textInput: {
     height: 50,
     borderWidth: 1,
-    borderColor: 'rgba(0, 0, 0, 0.2)',
+    borderColor: Colors.border,
     marginHorizontal: 20,
     marginVertical: 10,
     borderRadius: 25,
     paddingLeft: 10,
+    backgroundColor: Colors.surface,
+    color: Colors.text,
   },
   formButton: {
-    backgroundColor: 'rgba(255, 0, 0, 0.8)',
+    backgroundColor: Colors.accent,
     height: 55,
     alignItems: 'center',
     justifyContent: 'center',
@@ -318,7 +335,7 @@ const styles = StyleSheet.create({
     marginHorizontal: 20,
     marginVertical: 10,
     borderWidth: 1,
-    borderColor: 'white',
+    borderColor: Colors.accent,
     shadowColor: "#000",
     shadowOffset: {
       width: 0,
@@ -331,8 +348,10 @@ const styles = StyleSheet.create({
   formInputContainer: {
     marginBottom: 70,
     ...StyleSheet.absoluteFillObject,
-    zIndex: 1,
-    justifyContent: 'center',
+    zIndex: 10,
+    justifyContent: 'flex-start',
+    paddingTop: 100,
+    paddingHorizontal: 20,
   },
   closeButtonContainer: {
     height: 40,
@@ -346,11 +365,13 @@ const styles = StyleSheet.create({
     },
     shadowOpacity: 0.34,
     shadowRadius: 6.27,
-    elevation: 1,
+    elevation: 1000,
     backgroundColor: 'white',
     alignItems: 'center',
     borderRadius: 25,
-    top: -20,
+    top: 60,
+    zIndex: 1000,
+    position: 'absolute',
   },
   closeButtonText: {
     fontSize: 18,
@@ -364,10 +385,118 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   guestButtonText: {
-    color: 'white',
+    color: Colors.text,
   },
   guestButton: {
-    backgroundColor: 'rgba(128, 128, 128, 0.8)', // Gray color for guest mode
-    borderColor: '#ddd',
+    backgroundColor: Colors.background,
+    borderColor: Colors.border,
+  },
+  registrationTitle: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: Colors.textInverse,
+    textAlign: 'center',
+    marginBottom: 20,
+    marginTop: 10,
+  },
+  formTitle: {
+    fontSize: 28,
+    fontWeight: 'bold',
+    color: Colors.textInverse,
+    textAlign: 'center',
+    marginBottom: 30,
+    marginTop: 20,
+  },
+  submitButton: {
+    backgroundColor: Colors.accent,
+    borderColor: Colors.accent,
+  },
+  switchAuthButton: {
+    alignItems: 'center',
+    marginTop: 20,
+  },
+  switchAuthText: {
+    color: Colors.textInverse,
+    fontSize: 16,
+    fontWeight: '500',
+  },
+  emailFormContainer: {
+    flex: 1,
+    backgroundColor: 'transparent',
+  },
+  emailFormHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 20,
+    paddingTop: 60,
+    paddingBottom: 20,
+  },
+  backButtonHeader: {
+    padding: 8,
+    borderRadius: 20,
+    backgroundColor: Colors.primary,
+  },
+  emailFormTitle: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: Colors.textInverse,
+  },
+  emailFormContent: {
+    flex: 1,
+    paddingHorizontal: 20,
+    justifyContent: 'center',
+  },
+  emailFormInput: {
+    height: 55,
+    backgroundColor: Colors.surface,
+    borderRadius: 16,
+    paddingHorizontal: 20,
+    marginBottom: 16,
+    fontSize: 16,
+    color: Colors.text,
+    borderWidth: 1,
+    borderColor: Colors.border,
+  },
+  emailFormSubmitButton: {
+    backgroundColor: Colors.primary,
+    height: 55,
+    borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 8,
+    marginBottom: 20,
+  },
+  emailFormSubmitText: {
+    color: Colors.textInverse,
+    fontSize: 18,
+    fontWeight: 'bold',
+  },
+  switchModeButton: {
+    alignItems: 'center',
+  },
+  switchModeText: {
+    color: Colors.textInverse,
+    fontSize: 16,
+    fontWeight: '500',
+  },
+  optionsHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 20,
+    paddingHorizontal: 20,
+  },
+  optionsBackButton: {
+    padding: 8,
+    borderRadius: 20,
+    backgroundColor: Colors.primary,
+  },
+  buttonIcon: {
+    marginRight: 4,
+  },
+  appleButtonContainer: {
+    marginHorizontal: 20,
+    marginVertical: 10,
   },
 });

@@ -8,6 +8,7 @@ import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs';
 import { Platform, Share } from 'react-native';
 import { router } from 'expo-router';
 import { supabase } from '../lib/supabase';
+import { Colors } from '@/constants/Colors';
 
 // Add this interface to handle the status type properly
 type AVPlaybackStatusSuccess = AVPlaybackStatus & {
@@ -176,6 +177,7 @@ useEffect(() => {
       }
     };
   }, []);
+
 
 
   // Handle app state changes - just pause/resume, no refresh
@@ -519,7 +521,9 @@ useEffect(() => {
   };
 
   const openWebsite = (website: string) => {
-    Linking.openURL(website);
+    if (website && website.trim() !== '') {
+      Linking.openURL(website);
+    }
   };
 
   const openMaps = (address: string) => {
@@ -610,7 +614,7 @@ useEffect(() => {
               <Ionicons 
                 name={isLiked ? "heart" : "heart-outline"} 
                 size={24} 
-                color={isLiked ? "#ff3040" : "white"} 
+                color={isLiked ? Colors.primary : "white"} 
               />
               {likeCount > 0 && (
                 <Text style={styles.actionCount}>{likeCount}</Text>
@@ -627,7 +631,7 @@ useEffect(() => {
               <Ionicons 
                 name={isSaved ? "bookmark" : "bookmark-outline"} 
                 size={24} 
-                color={isSaved ? "#ffa500" : "white"} 
+                color={isSaved ? Colors.secondary : "white"} 
               />
               {saveCount > 0 && (
                 <Text style={styles.actionCount}>{saveCount}</Text>
@@ -723,6 +727,7 @@ useEffect(() => {
             </View>
           </View>
         </Modal>
+
     </View>
   );
 }
@@ -854,7 +859,7 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   actionButtonModal: {
-    backgroundColor: '#007AFF',
+    backgroundColor: Colors.primary,
     paddingHorizontal: 20,
     paddingVertical: 12,
     borderRadius: 8,
