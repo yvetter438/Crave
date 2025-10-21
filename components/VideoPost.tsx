@@ -104,6 +104,12 @@ export default function VideoPost({post, activePostId, shouldPlay }: VideoPost) 
   const maxRetries = 3;
   const loadingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const restaurantFetchedRef = useRef<number | null>(null);
+  
+  // Double-tap to like
+  const [showLikeAnimation, setShowLikeAnimation] = useState(false);
+  const lastTapRef = useRef<number>(0);
+  const doubleTapDelay = 300; // milliseconds
+  const singleTapTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   // Recovery function to refresh the video player
   const recoverVideoPlayer = () => {
@@ -133,6 +139,16 @@ export default function VideoPost({post, activePostId, shouldPlay }: VideoPost) 
     if (Platform.OS === 'ios') {
       setIsMuted(true); // Start muted on iOS silent mode
     }
+    
+    // Cleanup timers on unmount
+    return () => {
+      if (singleTapTimerRef.current) {
+        clearTimeout(singleTapTimerRef.current);
+      }
+      if (loadingTimeoutRef.current) {
+        clearTimeout(loadingTimeoutRef.current);
+      }
+    };
   }, []);
 
 // Handle volume button changes only when in silent mode
@@ -356,6 +372,37 @@ useEffect(() => {
   }, [activePostId, post.id]);
   
   const onPress = () => {
+    const now = Date.now();
+    const timeSinceLastTap = now - lastTapRef.current;
+    
+    // Check for double-tap
+    if (timeSinceLastTap < doubleTapDelay && timeSinceLastTap > 0) {
+      // Double-tap detected - clear single tap timer and like the post
+      if (singleTapTimerRef.current) {
+        clearTimeout(singleTapTimerRef.current);
+        singleTapTimerRef.current = null;
+      }
+      handleDoubleTap();
+      lastTapRef.current = 0; // Reset
+      return;
+    }
+    
+    // Potential single tap - wait to see if double tap comes
+    lastTapRef.current = now;
+    
+    // Clear any existing timer
+    if (singleTapTimerRef.current) {
+      clearTimeout(singleTapTimerRef.current);
+    }
+    
+    // Wait for doubleTapDelay before executing single tap action
+    singleTapTimerRef.current = setTimeout(() => {
+      handleSingleTap();
+      singleTapTimerRef.current = null;
+    }, doubleTapDelay);
+  };
+  
+  const handleSingleTap = () => {
     if (hasError) {
       // If there's an error, try to recover
       recoverVideoPlayer();
@@ -379,7 +426,18 @@ useEffect(() => {
         setHasError(true);
       }
     }
-  }
+  };
+  
+  const handleDoubleTap = async () => {
+    // Show heart animation
+    setShowLikeAnimation(true);
+    setTimeout(() => setShowLikeAnimation(false), 1000);
+    
+    // Like the post if not already liked
+    if (!isLiked) {
+      await toggleLike();
+    }
+  };
 
   // COMMENTED OUT FOR MVP
   // const onRecipePress = () => {
@@ -564,6 +622,22 @@ useEffect(() => {
           color="rgba(255,255,255,0.7)" 
         />
       )}
+      
+      {/* Double-tap like animation */}
+      {showLikeAnimation && (
+        <Ionicons 
+          style={{ 
+            position: 'absolute', 
+            alignSelf: 'center', 
+            top: '50%',
+            transform: [{ translateY: -50 }]
+          }}
+          name="heart"
+          size={120} 
+          color={Colors.primary}
+        />
+      )}
+      
       <SafeAreaView style={{ flex: 1}}>
          <View style={styles.footer}>
           {/* bottom: caption */}
