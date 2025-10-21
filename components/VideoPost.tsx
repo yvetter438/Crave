@@ -103,6 +103,7 @@ export default function VideoPost({post, activePostId, shouldPlay }: VideoPost) 
   const [isLoading, setIsLoading] = useState(true);
   const maxRetries = 3;
   const loadingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const restaurantFetchedRef = useRef<number | null>(null);
 
   // Recovery function to refresh the video player
   const recoverVideoPlayer = () => {
@@ -304,11 +305,20 @@ useEffect(() => {
     checkSaveStatus();
   }, [post.id]);
 
-  // Fetch restaurant data
+  // Fetch restaurant data only once when post.restaurant changes
   useEffect(() => {
-    const fetchRestaurant = async () => {
-      if (!post.restaurant) return;
+    // Skip if already fetched for this restaurant ID
+    if (restaurantFetchedRef.current === post.restaurant) {
+      return;
+    }
+    
+    if (!post.restaurant) {
+      setRestaurant(null);
+      restaurantFetchedRef.current = null;
+      return;
+    }
 
+    const fetchRestaurant = async () => {
       try {
         const { data: restaurantData, error } = await supabase
           .from('restaurants')
@@ -322,7 +332,9 @@ useEffect(() => {
         }
 
         if (restaurantData) {
+          console.log('Restaurant data fetched:', restaurantData.name);
           setRestaurant(restaurantData);
+          restaurantFetchedRef.current = post.restaurant;
         }
       } catch (error) {
         console.error('Error fetching restaurant:', error);
@@ -556,6 +568,23 @@ useEffect(() => {
          <View style={styles.footer}>
           {/* bottom: caption */}
           <View style={styles.leftColumn}>
+            {/* Glassmorphic restaurant button above profile */}
+            {restaurant && restaurant.name && (
+              <TouchableOpacity 
+                style={styles.restaurantGlassButton}
+                onPress={onRestaurantPress}
+                activeOpacity={0.8}
+                pointerEvents="auto"
+              >
+                <View style={styles.restaurantGlassContent}>
+                  <Ionicons name="location" size={14} color="white" style={styles.locationIcon} />
+                  <Text style={styles.restaurantGlassText} numberOfLines={1} ellipsizeMode="tail">
+                    {restaurant.name}
+                  </Text>
+                </View>
+              </TouchableOpacity>
+            )}
+            
             {/* Profile picture */}
             {avatarUrl ? (
               <Image source={{ uri: avatarUrl }} style={styles.profilePicture} />
@@ -576,34 +605,6 @@ useEffect(() => {
           
           {/* Right side button stack */}
           <View style={styles.rightColumn}>
-            {/* Shopping button - COMMENTED OUT FOR MVP */}
-            {/* <TouchableOpacity 
-              style={styles.actionButton} 
-              onPress={onShoppingPress}
-              activeOpacity={0.7}
-            >
-              <Ionicons name="bag-outline" size={24} color="white" />
-            </TouchableOpacity> */}
-            
-            {/* Restaurant button */}
-            <TouchableOpacity 
-              style={styles.actionButton} 
-              onPress={onRestaurantPress}
-              activeOpacity={0.7}
-              pointerEvents="auto"
-            >
-              <Ionicons name="storefront-outline" size={24} color="white" />
-            </TouchableOpacity>
-            
-            {/* Recipe button - COMMENTED OUT FOR MVP */}
-            {/* <TouchableOpacity 
-              style={styles.actionButton} 
-              onPress={onRecipePress}
-              activeOpacity={0.7}
-            >
-              <Ionicons name="restaurant" size={24} color="white" />
-            </TouchableOpacity> */}
-            
             {/* Like button */}
             <TouchableOpacity 
               style={styles.actionButton} 
@@ -874,5 +875,40 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
     marginLeft: 8,
+  },
+  restaurantGlassButton: {
+    marginBottom: 12,
+    alignSelf: 'flex-start',
+    backgroundColor: 'rgba(255, 255, 255, 0.15)',
+    borderRadius: 20,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.3)',
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 4,
+    },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 5,
+    backdropFilter: 'blur(10px)',
+    maxWidth: '85%',
+  },
+  restaurantGlassContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  locationIcon: {
+    marginRight: 6,
+  },
+  restaurantGlassText: {
+    color: 'white',
+    fontSize: 13,
+    fontWeight: '600',
+    textShadowColor: 'rgba(0, 0, 0, 0.5)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 3,
   },
 });
