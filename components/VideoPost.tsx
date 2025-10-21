@@ -9,6 +9,7 @@ import { Platform, Share } from 'react-native';
 import { router } from 'expo-router';
 import { supabase } from '../lib/supabase';
 import { Colors } from '@/constants/Colors';
+import * as Haptics from 'expo-haptics';
 
 // Add this interface to handle the status type properly
 type AVPlaybackStatusSuccess = AVPlaybackStatus & {
@@ -429,6 +430,9 @@ useEffect(() => {
   };
   
   const handleDoubleTap = async () => {
+    // Trigger haptic feedback
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    
     // Show heart animation
     setShowLikeAnimation(true);
     setTimeout(() => setShowLikeAnimation(false), 1000);
@@ -499,6 +503,9 @@ useEffect(() => {
 
       if (isLiked) {
         console.log('Unliking post');
+        // Haptic feedback for unlike (lighter)
+        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+        
         // Unlike
         const { error } = await supabase
           .from('likes')
@@ -515,6 +522,9 @@ useEffect(() => {
         }
       } else {
         console.log('Liking post');
+        // Haptic feedback for like (medium - only if not from double-tap)
+        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+        
         // Like with upsert to handle duplicates gracefully
         const { error } = await supabase
           .from('likes')
