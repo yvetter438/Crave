@@ -259,16 +259,10 @@ export default function Settings() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
-      // If no username is set, we can't create a profile yet
-      if (!username || username.trim() === '') {
-        Alert.alert('Error', 'Please set a username first before uploading an avatar');
-        return;
-      }
-
       // First check if profile exists
       const { data: existingProfile } = await supabase
         .from('profiles')
-        .select('id')
+        .select('id, username')
         .eq('user_id', user.id)
         .single();
 
@@ -283,13 +277,18 @@ export default function Settings() {
           .eq('user_id', user.id);
         updateError = error;
       } else {
-        // Create new profile with avatar (shouldn't happen if username is set first)
+        // Create new profile with avatar
+        // Use provided username or generate one from email
+        const generatedUsername = username.trim() || 
+          user.email?.split('@')[0].toLowerCase().replace(/[^a-z0-9._]/g, '') || 
+          `user_${user.id.slice(0, 8)}`;
+        
         const { error } = await supabase
           .from('profiles')
           .insert({
             user_id: user.id,
-            username: username || 'user',
-            displayname: displayname || username || 'user',
+            username: generatedUsername,
+            displayname: displayname || generatedUsername,
             avatar_url: data.path,
           });
         updateError = error;

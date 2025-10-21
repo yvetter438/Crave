@@ -1,11 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { View, Text, Image, StyleSheet, FlatList, Dimensions, Modal, TouchableOpacity, Alert } from 'react-native';
 // import { Video } from 'expo-av'; // Removed - using Image for thumbnails
 import * as ImagePicker from 'expo-image-picker';
 import { supabase } from '../../lib/supabase';
 import { Session } from '@supabase/supabase-js';
 import { Ionicons } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
+import { useRouter, useFocusEffect } from 'expo-router';
 //post type
 interface Post {
   id: number;
@@ -58,6 +58,15 @@ export default function Profile() {
 
     return () => subscription.unsubscribe();
   }, []);
+
+  // Refresh profile when screen comes into focus (e.g., returning from settings)
+  useFocusEffect(
+    useCallback(() => {
+      if (session?.user) {
+        fetchProfile(session.user.id);
+      }
+    }, [session])
+  );
 
   const fetchProfile = async (userId: string) => {
     try {
