@@ -22,6 +22,12 @@ interface Profile {
   username: string;
   displayname: string;
   avatar_url: string | null;
+  bio?: string;
+  location?: string;
+  instagram_handle?: string;
+  followers_count?: number;
+  following_count?: number;
+  likes_count?: number;
 }
 
 
@@ -156,6 +162,15 @@ export default function Profile() {
     </TouchableOpacity>
   );
 
+  const renderEmptyState = () => (
+    <View style={styles.emptyStateContainer}>
+      <View style={styles.emptyStatePlusContainer}>
+        <Ionicons name="add" size={60} color="#bbb" />
+      </View>
+      <Text style={styles.emptyStateText}>Post videos</Text>
+    </View>
+  );
+
 
   // const pickImage = async () => {
   //   let result = await ImagePicker.launchImageLibraryAsync({
@@ -206,21 +221,42 @@ export default function Profile() {
         </Text>
       )}
 
+      {/* Bio Section */}
+      {profile?.bio && (
+        <Text style={styles.bio}>
+          {profile.bio}
+        </Text>
+      )}
+
+      {/* Location */}
+      {profile?.location && (
+        <View style={styles.locationContainer}>
+          <Ionicons name="location-outline" size={14} color="#666" />
+          <Text style={styles.locationText}>{profile.location}</Text>
+        </View>
+      )}
+
+      {/* Instagram Link */}
+      {profile?.instagram_handle && (
+        <TouchableOpacity style={styles.socialLinkContainer}>
+          <Ionicons name="logo-instagram" size={16} color="#E4405F" />
+          <Text style={styles.socialLinkText}>@{profile.instagram_handle}</Text>
+        </TouchableOpacity>
+      )}
+
       <View style={styles.statsContainer}>
         <View style={styles.stats}>
-          <Text style={styles.statNumber}>{postCount}</Text>
-          <Text style={styles.statLabel}>Posts</Text>
-        </View>
-        {/*
-        <View style={styles.stats}>
-          <Text style={styles.statNumber}>1.2K</Text>
+          <Text style={styles.statNumber}>{profile?.followers_count || 0}</Text>
           <Text style={styles.statLabel}>Followers</Text>
         </View>
         <View style={styles.stats}>
-          <Text style={styles.statNumber}>200</Text>
+          <Text style={styles.statNumber}>{profile?.following_count || 0}</Text>
           <Text style={styles.statLabel}>Following</Text>
         </View>
-        */}
+        <View style={styles.stats}>
+          <Text style={styles.statNumber}>{profile?.likes_count || 0}</Text>
+          <Text style={styles.statLabel}>Likes</Text>
+        </View>
       </View>
 
       {session?.user ? (
@@ -231,6 +267,7 @@ export default function Profile() {
           numColumns={3}
           showsVerticalScrollIndicator={false}
           contentContainerStyle={styles.postsContainer}
+          ListEmptyComponent={!loading ? renderEmptyState : null}
           refreshing={loading}
           onRefresh={() => session?.user && fetchUserPosts(session.user.id, 20, 0)}
           onEndReached={() => {
@@ -395,5 +432,60 @@ const styles = StyleSheet.create({
     padding: 4,
     marginLeft: 10,
     marginTop: 0,
+  },
+  bio: {
+    fontSize: 14,
+    color: '#333',
+    textAlign: 'center',
+    marginTop: 10,
+    paddingHorizontal: 30,
+    lineHeight: 20,
+  },
+  locationContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 8,
+  },
+  locationText: {
+    fontSize: 14,
+    color: '#666',
+    marginLeft: 4,
+  },
+  socialLinkContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 8,
+    paddingVertical: 4,
+  },
+  socialLinkText: {
+    fontSize: 14,
+    color: '#E4405F',
+    marginLeft: 6,
+    fontWeight: '500',
+  },
+  emptyStateContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingTop: 60,
+  },
+  emptyStatePlusContainer: {
+    width: 120,
+    height: 120,
+    borderRadius: 60,
+    backgroundColor: '#f5f5f5',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 2,
+    borderColor: '#e0e0e0',
+    borderStyle: 'dashed',
+  },
+  emptyStateText: {
+    fontSize: 16,
+    color: '#999',
+    marginTop: 16,
+    fontWeight: '500',
   },
 });
