@@ -1,5 +1,6 @@
 import VideoPost from '@/components/VideoPost';
-import { View,  StyleSheet, FlatList, AppState  } from 'react-native';
+import EndOfFeedCard from '@/components/EndOfFeedCard';
+import { View,  StyleSheet, FlatList, AppState, RefreshControl  } from 'react-native';
 import { useState, useRef, useEffect, useCallback } from 'react';
 // COMMENTED OUT: Gesture handler imports since we're not using swipe anymore
 // import { GestureHandlerRootView, Gesture, GestureDetector } from 'react-native-gesture-handler';
@@ -15,6 +16,11 @@ export default function Tab() {
   const [posts, setPosts] = useState([]);
   const [isAppActive, setIsAppActive] = useState(true);
   const [isFocused, setIsFocused] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [hasReachedEnd, setHasReachedEnd] = useState(false);
+  const [offset, setOffset] = useState(0);
+  const [feedSeed, setFeedSeed] = useState(Math.random());
 
   const shouldPlay = isFocused && isAppActive;
 
@@ -43,90 +49,138 @@ export default function Tab() {
 
 
   
-  useEffect(() => {
-    const fetchPosts = async () => {
-      try {
-        // Fetch data from the Supabase table
-        const { data, error } = await supabase
-          .from('posts') // Replace 'videos' with the name of your Supabase table
-          .select('id, video_url, description, user, restaurant');
-  
-        if (error) {
-          console.error('Error fetching posts:', error);
-          return;
-        }
-  
-        // Convert id to string and map the data into the desired format
-        const formattedData = data.map((item) => ({
-          id: item.id.toString(),
-          video_url: item.video_url,
-          description: item.description,
-          user: item.user,
-          restaurant: item.restaurant,
-        }));
-  
-        // Update the state with fetched posts
-        setPosts(formattedData);
-
-        //set the first post as active if available
-        if (formattedData.length > 0) {
-          setActivePostId(formattedData[0].id);
-        //  console.log('Initial activePostId set to:', formattedData[0].id); // Log initial activePostId
-        }
-      } catch (err) {
-        console.error('Unexpected error fetching posts:', err);
+  // Fetch ranked feed with offset pagination
+  const fetchRankedFeed = async (resetFeed: boolean = false) => {
+    // Prevent double-fetching
+    if (resetFeed && isRefreshing) return;
+    if (!resetFeed && isLoading) return;
+    
+    try {
+      if (resetFeed) {
+        setIsRefreshing(true);
+        setHasReachedEnd(false);
+      } else {
+        setIsLoading(true);
       }
-    };
-  
-    fetchPosts();
+
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        console.log('No authenticated user');
+        setIsLoading(false);
+        setIsRefreshing(false);
+        return;
+      }
+
+      const currentOffset = resetFeed ? 0 : offset;
+      const currentSeed = resetFeed ? Math.random() : feedSeed;
+      
+      if (resetFeed) {
+        setFeedSeed(currentSeed); // Store new seed for this feed session
+      }
+
+      console.log(`📊 Fetching feed - Offset: ${currentOffset}, Seed: ${currentSeed.toFixed(6)}`);
+
+      // Call the ranked feed RPC function with offset and seed
+      const { data, error } = await supabase.rpc('get_ranked_feed_offset', {
+        p_user_id: user.id,
+        p_limit: 10,
+        p_offset: currentOffset,
+        p_seed: currentSeed
+      });
+
+      if (error) {
+        console.error('Error fetching ranked feed:', error);
+        setIsLoading(false);
+        setIsRefreshing(false);
+        return;
+      }
+
+      if (!data || data.length === 0) {
+        console.log('Reached end of feed');
+        setHasReachedEnd(true);
+        setIsLoading(false);
+        setIsRefreshing(false);
+        return;
+      }
+
+      // Format the data
+      const formattedData = data.map((item: any) => ({
+        id: item.id.toString(),
+        video_url: item.video_url,
+        description: item.description,
+        user: item.user_id,
+        restaurant: item.restaurant,
+      }));
+
+      // DEBUG: Log post IDs to check for duplicates
+      console.log('Fetched post IDs:', formattedData.map(p => p.id).join(', '));
+      
+      if (resetFeed) {
+        // Replace posts with fresh feed
+        setPosts(formattedData);
+        setOffset(10); // Next offset
+        console.log('RESET: Total posts in feed:', formattedData.length);
+      } else {
+        // Append to existing posts
+        setPosts((currentPosts) => {
+          const newPosts = [...currentPosts, ...formattedData];
+          console.log('APPEND: Total posts in feed:', newPosts.length);
+          
+          // DEBUG: Check for duplicates
+          const postIds = newPosts.map(p => p.id);
+          const uniqueIds = new Set(postIds);
+          if (postIds.length !== uniqueIds.size) {
+            console.error('🚨 DUPLICATE DETECTED IN FEED!');
+            console.error('Duplicate post IDs:', postIds.filter((id, idx) => postIds.indexOf(id) !== idx));
+          }
+          
+          return newPosts;
+        });
+        setOffset(currentOffset + 10);
+      }
+
+      // Check if we got fewer posts than requested (last page)
+      if (data.length < 10) {
+        setHasReachedEnd(true);
+      }
+
+      // Set first post as active
+      if (formattedData.length > 0 && (resetFeed || posts.length === 0)) {
+        setActivePostId(formattedData[0].id);
+      }
+
+      setIsLoading(false);
+      setIsRefreshing(false);
+    } catch (err) {
+      console.error('Unexpected error fetching ranked feed:', err);
+      setIsLoading(false);
+      setIsRefreshing(false);
+    }
+  };
+
+  // Initial feed load
+  useEffect(() => {
+    fetchRankedFeed(true);
   }, []);
   
 
-  const onEndReached = async () => {
-    try {
-      // Fetch the next batch of posts
-      const { data, error } = await supabase
-        .from('posts')
-        .select('id, video_url, description, user, restaurant')
-        .range(posts.length, posts.length + 10); // Fetch next 10 posts
-  
-      if (error) {
-        console.error('Error fetching more posts:', error);
-        return;
-      }
-  
-      if (data.length === 0) {
-        // Instead of appending to existing posts, replace with initial set
-        const { data: initialPosts } = await supabase
-          .from('posts')
-          .select('id, video_url, description, user, restaurant')
-          .range(0, 0);
-  
-        const formattedPosts = initialPosts.map((item) => ({
-          id: item.id.toString(),
-          video_url: item.video_url,
-          description: item.description,
-          user: item.user,
-          restaurant: item.restaurant,
-        }));
-  
-        setPosts(formattedPosts);
-        setActivePostId(formattedPosts[0].id);
-      } else {
-        // Append fetched posts to the current list
-        const additionalPosts = data.map((item) => ({
-          id: item.id.toString(),
-          video_url: item.video_url,
-          description: item.description,
-          user: item.user,
-          restaurant: item.restaurant,
-        }));
-  
-        setPosts((currentPosts) => [...currentPosts, ...additionalPosts]);
-      }
-    } catch (err) {
-      console.error('Unexpected error fetching more posts:', err);
+  // Load more posts when reaching the end
+  const onEndReached = () => {
+    if (!isLoading && !hasReachedEnd) {
+      fetchRankedFeed(false);
     }
+  };
+
+  // Pull to refresh / Rewatch handler
+  const handleRewatch = () => {
+    // Only rewatch if not already loading
+    if (isRefreshing) return;
+    
+    setPosts([]);
+    setOffset(0);
+    setHasReachedEnd(false);
+    // Don't set seed here - let fetchRankedFeed generate it
+    fetchRankedFeed(true);
   };
   
 ///previous activePostId does not get registered
@@ -154,17 +208,40 @@ export default function Tab() {
   //   });
 
 
+  // Prepare data with end card if reached end
+  const feedData = hasReachedEnd 
+    ? [...posts, { id: 'end-of-feed', isEndCard: true }]
+    : posts;
+
   return (
     <View style={styles.container}>
       <FlatList
-      data={posts} 
-      renderItem={({ item }) => <VideoPost post={item} activePostId={activePostId} shouldPlay={shouldPlay}/>}
+      data={feedData} 
+      renderItem={({ item }) => {
+        if (item.isEndCard) {
+          return <EndOfFeedCard onRewatch={handleRewatch} />;
+        }
+        return (
+          <VideoPost 
+            post={item} 
+            activePostId={activePostId} 
+            shouldPlay={shouldPlay}
+          />
+        );
+      }}
       keyExtractor={(item, index) => `${item.id}-${index}`}
       pagingEnabled
       viewabilityConfigCallbackPairs={viewabilityConfigCallbackPairs.current}
       showsVerticalScrollIndicator={false}
       onEndReached={onEndReached}
       onEndReachedThreshold={1}
+      refreshControl={
+        <RefreshControl
+          refreshing={isRefreshing}
+          onRefresh={handleRewatch}
+          tintColor="#fff"
+        />
+      }
     />
     </View>
   );

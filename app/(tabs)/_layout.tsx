@@ -1,4 +1,5 @@
 import FontAwesome from '@expo/vector-icons/FontAwesome';
+import Ionicons from '@expo/vector-icons/Ionicons';
 import { Tabs } from 'expo-router';
 import { ActivePostProvider } from '@/context/ActivePostContext';
 import { Colors } from '@/constants/Colors';
@@ -26,9 +27,11 @@ export default function TabLayout() {
       <Tabs.Screen
         name="index"
         options={{
-          title: 'Discover',
+          title: 'Crave',
           headerShown: false, //hides the header for tiktokfeed
-          tabBarIcon: ({ color }) => <FontAwesome size={24} name="home" color={color} />,
+          tabBarIcon: ({ color, focused }) => (
+            <Ionicons size={28} name={focused ? 'flame' : 'flame-outline'} color={color} />
+          ),
         }}
       />
       {/* <Tabs.Screen

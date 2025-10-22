@@ -112,6 +112,11 @@ export default function VideoPost({post, activePostId, shouldPlay }: VideoPost) 
   const lastTapRef = useRef<number>(0);
   const doubleTapDelay = 300; // milliseconds
   const singleTapTimerRef = useRef<NodeJS.Timeout | null>(null);
+  
+  // Engagement tracking
+  const watchStartTimeRef = useRef<number | null>(null);
+  const impressionLoggedRef = useRef<Set<string>>(new Set());
+  const watchEventLoggedRef = useRef<Set<string>>(new Set());
 
   // Recovery function to refresh the video player
   const recoverVideoPlayer = () => {
@@ -372,6 +377,75 @@ useEffect(() => {
         setIsPlaying(true);
     }
   }, [activePostId, post.id]);
+
+  // Track impression when video becomes active
+  useEffect(() => {
+    const logImpression = async () => {
+      if (activePostId === post.id && !impressionLoggedRef.current.has(post.id)) {
+        try {
+          const { data: { user } } = await supabase.auth.getUser();
+          if (!user) return;
+
+          // Log impression using RPC function
+          await supabase.rpc('log_impression', {
+            p_user_id: user.id,
+            p_post_id: parseInt(post.id)
+          });
+
+          impressionLoggedRef.current.add(post.id);
+          console.log('Impression logged for post:', post.id);
+        } catch (error) {
+          console.error('Error logging impression:', error);
+        }
+      }
+    };
+
+    // Debounce impression logging by 500ms
+    const timeoutId = setTimeout(logImpression, 500);
+    return () => clearTimeout(timeoutId);
+  }, [activePostId, post.id]);
+
+  // Track watch time
+  useEffect(() => {
+    if (isPlaying) {
+      // Start timer when video plays
+      watchStartTimeRef.current = Date.now();
+    } else {
+      // When video pauses, check if watch duration >= 2s
+      if (watchStartTimeRef.current && !watchEventLoggedRef.current.has(post.id)) {
+        const watchDuration = Math.floor((Date.now() - watchStartTimeRef.current) / 1000);
+        
+        if (watchDuration >= 2) {
+          // Log watch event
+          const logWatchEvent = async () => {
+            try {
+              const { data: { user } } = await supabase.auth.getUser();
+              if (!user) return;
+
+              const { error } = await supabase
+                .from('watch_events')
+                .insert({
+                  user_id: user.id,
+                  post_id: parseInt(post.id),
+                  watch_duration_seconds: watchDuration
+                });
+
+              if (!error) {
+                watchEventLoggedRef.current.add(post.id);
+                console.log(`Watch event logged: ${watchDuration}s for post ${post.id}`);
+              }
+            } catch (error) {
+              console.error('Error logging watch event:', error);
+            }
+          };
+
+          logWatchEvent();
+        }
+        
+        watchStartTimeRef.current = null;
+      }
+    }
+  }, [isPlaying, post.id]);
   
   const onPress = () => {
     const now = Date.now();
