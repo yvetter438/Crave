@@ -79,9 +79,7 @@ export default function SearchScreen() {
   };
 
   const handleUserPress = (userId: string) => {
-    // TODO: Navigate to user profile
-    console.log('User pressed:', userId);
-    // router.push(`/user/${userId}`);
+    router.push(`/user/${userId}`);
   };
 
   const renderUserItem = ({ item }: { item: UserProfile }) => {
@@ -324,3 +322,4 @@ const styles = StyleSheet.create({
     lineHeight: 20,
   },
 });
+

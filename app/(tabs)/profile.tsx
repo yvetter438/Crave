@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { View, Text, Image, StyleSheet, FlatList, Dimensions, Modal, TouchableOpacity, Alert } from 'react-native';
+import { View, Text, Image, StyleSheet, FlatList, Dimensions, Modal, TouchableOpacity, Alert, Linking } from 'react-native';
 // import { Video } from 'expo-av'; // Removed - using Image for thumbnails
 import * as ImagePicker from 'expo-image-picker';
 import { supabase } from '../../lib/supabase';
@@ -171,6 +171,25 @@ export default function Profile() {
     </View>
   );
 
+  const openInstagram = async (handle: string) => {
+    const instagramUrl = `https://instagram.com/${handle}`;
+    const instagramAppUrl = `instagram://user?username=${handle}`;
+    
+    try {
+      // Try to open Instagram app first
+      const canOpenApp = await Linking.canOpenURL(instagramAppUrl);
+      if (canOpenApp) {
+        await Linking.openURL(instagramAppUrl);
+      } else {
+        // Fall back to web browser
+        await Linking.openURL(instagramUrl);
+      }
+    } catch (error) {
+      console.error('Error opening Instagram:', error);
+      Alert.alert('Error', 'Could not open Instagram');
+    }
+  };
+
 
   // const pickImage = async () => {
   //   let result = await ImagePicker.launchImageLibraryAsync({
@@ -238,7 +257,11 @@ export default function Profile() {
 
       {/* Instagram Link */}
       {profile?.instagram_handle && (
-        <TouchableOpacity style={styles.socialLinkContainer}>
+        <TouchableOpacity 
+          style={styles.socialLinkContainer}
+          onPress={() => openInstagram(profile.instagram_handle!)}
+          activeOpacity={0.7}
+        >
           <Ionicons name="logo-instagram" size={16} color="#E4405F" />
           <Text style={styles.socialLinkText}>@{profile.instagram_handle}</Text>
         </TouchableOpacity>

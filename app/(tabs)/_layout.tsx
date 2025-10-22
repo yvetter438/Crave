@@ -34,6 +34,16 @@ export default function TabLayout() {
           ),
         }}
       />
+      <Tabs.Screen
+        name="search"
+        options={{
+          title: 'Search',
+          headerShown: false,
+          tabBarIcon: ({ color, focused }) => (
+            <Ionicons size={26} name={focused ? 'search' : 'search-outline'} color={color} />
+          ),
+        }}
+      />
       {/* <Tabs.Screen
         name="upload"
         options={{
