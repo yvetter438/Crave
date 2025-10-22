@@ -306,14 +306,22 @@ export default function UserProfile() {
 
             {/* Stats */}
             <View style={styles.statsContainer}>
-              <View style={styles.stats}>
+              <TouchableOpacity 
+                style={styles.stats}
+                onPress={() => router.push(`/followers/${id}`)}
+                activeOpacity={0.7}
+              >
                 <Text style={styles.statNumber}>{profile.followers_count || 0}</Text>
                 <Text style={styles.statLabel}>Followers</Text>
-              </View>
-              <View style={styles.stats}>
+              </TouchableOpacity>
+              <TouchableOpacity 
+                style={styles.stats}
+                onPress={() => router.push(`/following/${id}`)}
+                activeOpacity={0.7}
+              >
                 <Text style={styles.statNumber}>{profile.following_count || 0}</Text>
                 <Text style={styles.statLabel}>Following</Text>
-              </View>
+              </TouchableOpacity>
               <View style={styles.stats}>
                 <Text style={styles.statNumber}>{profile.likes_count || 0}</Text>
                 <Text style={styles.statLabel}>Likes</Text>

@@ -3,6 +3,7 @@ import Ionicons from '@expo/vector-icons/Ionicons';
 import { Tabs } from 'expo-router';
 import { ActivePostProvider } from '@/context/ActivePostContext';
 import { Colors } from '@/constants/Colors';
+import { CraveTabIcon } from '@/components/CraveTabIcon';
 
 export default function TabLayout() {
   return (
@@ -29,8 +30,8 @@ export default function TabLayout() {
         options={{
           title: 'Crave',
           headerShown: false, //hides the header for tiktokfeed
-          tabBarIcon: ({ color, focused }) => (
-            <Ionicons size={28} name={focused ? 'flame' : 'flame-outline'} color={color} />
+          tabBarIcon: ({ focused }) => (
+            <CraveTabIcon focused={focused} size={30} />
           ),
         }}
       />
