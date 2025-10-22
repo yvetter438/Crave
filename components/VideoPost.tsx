@@ -10,6 +10,7 @@ import { router } from 'expo-router';
 import { supabase } from '../lib/supabase';
 import { Colors } from '@/constants/Colors';
 import * as Haptics from 'expo-haptics';
+import { BlurView } from 'expo-blur';
 
 // Add this interface to handle the status type properly
 type AVPlaybackStatusSuccess = AVPlaybackStatus & {
@@ -745,40 +746,28 @@ useEffect(() => {
           onRequestClose={() => setRestaurantModalVisible(false)}
         >
           <View style={styles.modalOverlay}>
-            <View style={styles.restaurantModal}>
+            <BlurView intensity={80} tint="dark" style={styles.restaurantModal}>
               <View style={styles.modalHeader}>
                 <Text style={styles.modalTitle}>{restaurant?.name}</Text>
                 <TouchableOpacity
                   style={styles.closeButton}
                   onPress={() => setRestaurantModalVisible(false)}
                 >
-                  <Ionicons name="close" size={24} color="#666" />
+                  <Ionicons name="close" size={24} color="rgba(255, 255, 255, 0.9)" />
                 </TouchableOpacity>
               </View>
 
               <ScrollView style={styles.modalContent}>
                 <View style={styles.restaurantInfo}>
                   <View style={styles.infoRow}>
-                    <Ionicons name="restaurant" size={20} color="#666" />
+                    <Ionicons name="restaurant" size={20} color="rgba(255, 255, 255, 0.8)" />
                     <Text style={styles.infoText}>{restaurant?.cuisine}</Text>
                   </View>
 
                   <View style={styles.infoRow}>
-                    <Ionicons name="location" size={20} color="#666" />
+                    <Ionicons name="location" size={20} color="rgba(255, 255, 255, 0.8)" />
                     <Text style={styles.infoText}>{restaurant?.address}</Text>
                   </View>
-
-                  <View style={styles.infoRow}>
-                    <Ionicons name="call" size={20} color="#666" />
-                    <Text style={styles.infoText}>{restaurant?.phone}</Text>
-                  </View>
-
-                  {restaurant?.website && (
-                    <View style={styles.infoRow}>
-                      <Ionicons name="globe" size={20} color="#666" />
-                      <Text style={styles.infoText}>{restaurant.website}</Text>
-                    </View>
-                  )}
                 </View>
 
                 <View style={styles.actionButtons}>
@@ -809,7 +798,7 @@ useEffect(() => {
                   )}
                 </View>
               </ScrollView>
-            </View>
+            </BlurView>
           </View>
         </Modal>
 
@@ -891,18 +880,20 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   restaurantModal: {
-    backgroundColor: 'white',
-    borderRadius: 20,
+    borderRadius: 24,
     width: '90%',
     maxHeight: '80%',
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.2)',
     shadowColor: '#000',
     shadowOffset: {
       width: 0,
-      height: 2,
+      height: 8,
     },
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84,
-    elevation: 5,
+    shadowOpacity: 0.4,
+    shadowRadius: 16,
+    elevation: 10,
   },
   modalHeader: {
     flexDirection: 'row',
@@ -910,12 +901,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 20,
     borderBottomWidth: 1,
-    borderBottomColor: '#eee',
+    borderBottomColor: 'rgba(255, 255, 255, 0.1)',
   },
   modalTitle: {
     fontSize: 24,
     fontWeight: 'bold',
-    color: '#333',
+    color: 'white',
     flex: 1,
   },
   closeButton: {
@@ -934,7 +925,7 @@ const styles = StyleSheet.create({
   },
   infoText: {
     fontSize: 16,
-    color: '#333',
+    color: 'rgba(255, 255, 255, 0.9)',
     marginLeft: 10,
     flex: 1,
   },
