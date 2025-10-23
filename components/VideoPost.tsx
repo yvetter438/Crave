@@ -1,4 +1,4 @@
-import { View, Text, StyleSheet, Pressable, useWindowDimensions, TouchableOpacity, Image, Modal, Linking, ScrollView, AppState } from 'react-native';
+import { View, Text, StyleSheet, Pressable, useWindowDimensions, TouchableOpacity, Image, AppState } from 'react-native';
 import { VideoView, useVideoPlayer } from 'expo-video';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Ionicons from '@expo/vector-icons/Ionicons';
@@ -10,7 +10,6 @@ import { router } from 'expo-router';
 import { supabase } from '../lib/supabase';
 import { Colors } from '@/constants/Colors';
 import * as Haptics from 'expo-haptics';
-import { BlurView } from 'expo-blur';
 
 // Add this interface to handle the status type properly
 type AVPlaybackStatusSuccess = AVPlaybackStatus & {
@@ -93,7 +92,6 @@ export default function VideoPost({post, activePostId, shouldPlay }: VideoPost) 
   const [isSaved, setIsSaved] = useState(false);
   const [saveCount, setSaveCount] = useState(0);
   const [restaurant, setRestaurant] = useState<Restaurant | null>(null);
-  const [restaurantModalVisible, setRestaurantModalVisible] = useState(false);
   const { height }= useWindowDimensions();
   const tabBarHeight: number = useBottomTabBarHeight();
   const adjustedHeight: number = height - tabBarHeight;
@@ -529,7 +527,7 @@ useEffect(() => {
 
   const onRestaurantPress = () => {
     if (restaurant) {
-      setRestaurantModalVisible(true);
+      router.push(`/restaurant/${restaurant.id}`);
     }
   }
 
@@ -671,21 +669,6 @@ useEffect(() => {
     }
   }
 
-  const openPhone = (phone: string) => {
-    Linking.openURL(`tel:${phone}`);
-  };
-
-  const openWebsite = (website: string) => {
-    if (website && website.trim() !== '') {
-      Linking.openURL(website);
-    }
-  };
-
-  const openMaps = (address: string) => {
-    const encodedAddress = encodeURIComponent(address);
-    Linking.openURL(`https://maps.google.com/?q=${encodedAddress}`);
-  };
-
   return (
     <View style={[styles.container, {height: adjustedHeight}]}>
       <VideoView 
@@ -812,70 +795,6 @@ useEffect(() => {
         </SafeAreaView>
         </Pressable>
 
-        {/* Restaurant Modal */}
-        <Modal
-          visible={restaurantModalVisible}
-          transparent={true}
-          animationType="slide"
-          onRequestClose={() => setRestaurantModalVisible(false)}
-        >
-          <View style={styles.modalOverlay}>
-            <BlurView intensity={80} tint="dark" style={styles.restaurantModal}>
-              <View style={styles.modalHeader}>
-                <Text style={styles.modalTitle}>{restaurant?.name}</Text>
-                <TouchableOpacity
-                  style={styles.closeButton}
-                  onPress={() => setRestaurantModalVisible(false)}
-                >
-                  <Ionicons name="close" size={24} color="rgba(255, 255, 255, 0.9)" />
-                </TouchableOpacity>
-              </View>
-
-              <ScrollView style={styles.modalContent}>
-                <View style={styles.restaurantInfo}>
-                  <View style={styles.infoRow}>
-                    <Ionicons name="restaurant" size={20} color="rgba(255, 255, 255, 0.8)" />
-                    <Text style={styles.infoText}>{restaurant?.cuisine}</Text>
-                  </View>
-
-                  <View style={styles.infoRow}>
-                    <Ionicons name="location" size={20} color="rgba(255, 255, 255, 0.8)" />
-                    <Text style={styles.infoText}>{restaurant?.address}</Text>
-                  </View>
-                </View>
-
-                <View style={styles.actionButtons}>
-                  <TouchableOpacity
-                    style={styles.actionButtonModal}
-                    onPress={() => openPhone(restaurant?.phone || '')}
-                  >
-                    <Ionicons name="call" size={20} color="white" />
-                    <Text style={styles.actionButtonText}>Call</Text>
-                  </TouchableOpacity>
-
-                  <TouchableOpacity
-                    style={styles.actionButtonModal}
-                    onPress={() => openMaps(restaurant?.address || '')}
-                  >
-                    <Ionicons name="navigate" size={20} color="white" />
-                    <Text style={styles.actionButtonText}>Directions</Text>
-                  </TouchableOpacity>
-
-                  {restaurant?.website && (
-                    <TouchableOpacity
-                      style={styles.actionButtonModal}
-                      onPress={() => openWebsite(restaurant.website!)}
-                    >
-                      <Ionicons name="globe" size={20} color="white" />
-                      <Text style={styles.actionButtonText}>Website</Text>
-                    </TouchableOpacity>
-                  )}
-                </View>
-              </ScrollView>
-            </BlurView>
-          </View>
-        </Modal>
-
     </View>
   );
 }
@@ -946,84 +865,6 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: 'bold',
     marginTop: 2,
-  },
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'transparent',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  restaurantModal: {
-    borderRadius: 24,
-    width: '90%',
-    maxHeight: '80%',
-    overflow: 'hidden',
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.2)',
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 8,
-    },
-    shadowOpacity: 0.4,
-    shadowRadius: 16,
-    elevation: 10,
-  },
-  modalHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    padding: 20,
-    borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255, 255, 255, 0.1)',
-  },
-  modalTitle: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: 'white',
-    flex: 1,
-  },
-  closeButton: {
-    padding: 5,
-  },
-  modalContent: {
-    padding: 20,
-  },
-  restaurantInfo: {
-    marginBottom: 20,
-  },
-  infoRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 15,
-  },
-  infoText: {
-    fontSize: 16,
-    color: 'rgba(255, 255, 255, 0.9)',
-    marginLeft: 10,
-    flex: 1,
-  },
-  actionButtons: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 10,
-  },
-  actionButtonModal: {
-    backgroundColor: Colors.primary,
-    paddingHorizontal: 20,
-    paddingVertical: 12,
-    borderRadius: 8,
-    flexDirection: 'row',
-    alignItems: 'center',
-    flex: 1,
-    minWidth: '45%',
-    justifyContent: 'center',
-  },
-  actionButtonText: {
-    color: 'white',
-    fontSize: 16,
-    fontWeight: '600',
-    marginLeft: 8,
   },
   restaurantGlassButton: {
     marginBottom: 12,

@@ -25,9 +25,20 @@ interface UserProfile {
   followers_count?: number;
 }
 
+interface Restaurant {
+  id: number;
+  name: string;
+  cuisine: string;
+  address: string;
+}
+
+type SearchResult = 
+  | { type: 'user'; data: UserProfile }
+  | { type: 'restaurant'; data: Restaurant };
+
 export default function SearchScreen() {
   const [searchQuery, setSearchQuery] = useState('');
-  const [results, setResults] = useState<UserProfile[]>([]);
+  const [results, setResults] = useState<SearchResult[]>([]);
   const [loading, setLoading] = useState(false);
   const [hasSearched, setHasSearched] = useState(false);
   const router = useRouter();
@@ -36,7 +47,7 @@ export default function SearchScreen() {
   useEffect(() => {
     const timeoutId = setTimeout(() => {
       if (searchQuery.trim().length > 0) {
-        searchUsers(searchQuery.trim());
+        performSearch(searchQuery.trim());
       } else {
         setResults([]);
         setHasSearched(false);
@@ -46,26 +57,43 @@ export default function SearchScreen() {
     return () => clearTimeout(timeoutId);
   }, [searchQuery]);
 
-  const searchUsers = async (query: string) => {
+  const performSearch = async (query: string) => {
     setLoading(true);
     setHasSearched(true);
     
     try {
-      const { data, error } = await supabase
+      // Search users
+      const { data: usersData, error: usersError } = await supabase
         .from('profiles')
         .select('id, user_id, username, displayname, avatar_url, bio, followers_count')
         .or(`username.ilike.%${query}%,displayname.ilike.%${query}%`)
         .order('followers_count', { ascending: false })
         .limit(50);
 
-      if (error) {
-        console.error('Search error:', error);
-        return;
+      if (usersError) {
+        console.error('User search error:', usersError);
       }
 
-      setResults(data || []);
+      // Search restaurants (by name or cuisine type)
+      const { data: restaurantsData, error: restaurantsError } = await supabase
+        .from('restaurants')
+        .select('id, name, cuisine, address')
+        .or(`name.ilike.%${query}%,cuisine.ilike.%${query}%`)
+        .limit(50);
+
+      if (restaurantsError) {
+        console.error('Restaurant search error:', restaurantsError);
+      }
+
+      // Combine results
+      const combinedResults: SearchResult[] = [
+        ...(usersData || []).map(user => ({ type: 'user' as const, data: user })),
+        ...(restaurantsData || []).map(restaurant => ({ type: 'restaurant' as const, data: restaurant }))
+      ];
+
+      setResults(combinedResults);
     } catch (error) {
-      console.error('Error searching users:', error);
+      console.error('Error searching:', error);
     } finally {
       setLoading(false);
     }
@@ -82,7 +110,11 @@ export default function SearchScreen() {
     router.push(`/user/${userId}`);
   };
 
-  const renderUserItem = ({ item }: { item: UserProfile }) => {
+  const handleRestaurantPress = (restaurantId: number) => {
+    router.push(`/restaurant/${restaurantId}`);
+  };
+
+  const renderUserItem = (item: UserProfile) => {
     const avatarUrl = item.avatar_url 
       ? supabase.storage.from('avatars').getPublicUrl(item.avatar_url).data.publicUrl
       : null;
@@ -125,6 +157,38 @@ export default function SearchScreen() {
     );
   };
 
+  const renderRestaurantItem = (item: Restaurant) => {
+    return (
+      <TouchableOpacity 
+        style={styles.userCard}
+        onPress={() => handleRestaurantPress(item.id)}
+        activeOpacity={0.7}
+      >
+        <View style={styles.userCardContent}>
+          <View style={styles.avatarPlaceholder}>
+            <Ionicons name="restaurant" size={24} color="#FF6B6B" />
+          </View>
+          
+          <View style={styles.userInfo}>
+            <Text style={styles.username}>{item.name}</Text>
+            <Text style={styles.displayname}>{item.cuisine}</Text>
+            <Text style={styles.bio} numberOfLines={1}>
+              {item.address}
+            </Text>
+          </View>
+        </View>
+      </TouchableOpacity>
+    );
+  };
+
+  const renderItem = ({ item }: { item: SearchResult }) => {
+    if (item.type === 'user') {
+      return renderUserItem(item.data);
+    } else {
+      return renderRestaurantItem(item.data);
+    }
+  };
+
   const renderEmptyState = () => {
     if (loading) return null;
     
@@ -132,9 +196,9 @@ export default function SearchScreen() {
       return (
         <View style={styles.emptyState}>
           <Ionicons name="search" size={64} color="#ddd" />
-          <Text style={styles.emptyStateTitle}>Search for people</Text>
+          <Text style={styles.emptyStateTitle}>Search for people & restaurants</Text>
           <Text style={styles.emptyStateText}>
-            Find friends by username or name
+            Find friends or discover restaurants by name or cuisine
           </Text>
         </View>
       );
@@ -145,7 +209,7 @@ export default function SearchScreen() {
         <Ionicons name="person-outline" size={64} color="#ddd" />
         <Text style={styles.emptyStateTitle}>No results found</Text>
         <Text style={styles.emptyStateText}>
-          Try searching for a different username or name
+          Try searching for a different name
         </Text>
       </View>
     );
@@ -184,8 +248,8 @@ export default function SearchScreen() {
         ) : (
           <FlatList
             data={results}
-            renderItem={renderUserItem}
-            keyExtractor={(item) => item.id.toString()}
+            renderItem={renderItem}
+            keyExtractor={(item) => `${item.type}-${item.data.id}`}
             contentContainerStyle={styles.resultsList}
             showsVerticalScrollIndicator={false}
             ListEmptyComponent={renderEmptyState}
