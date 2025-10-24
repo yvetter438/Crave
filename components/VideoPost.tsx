@@ -9,6 +9,7 @@ import { router } from 'expo-router';
 import { supabase } from '../lib/supabase';
 import { Colors } from '@/constants/Colors';
 import * as Haptics from 'expo-haptics';
+import CommentSheet from './CommentSheet';
 
 // Add this interface to handle the status type properly
 type AVPlaybackStatusSuccess = AVPlaybackStatus & {
@@ -92,6 +93,8 @@ export default function VideoPost({post, activePostId, shouldPlay, isFullScreen 
   const [isSaved, setIsSaved] = useState(false);
   const [saveCount, setSaveCount] = useState(0);
   const [restaurant, setRestaurant] = useState<Restaurant | null>(null);
+  const [commentCount, setCommentCount] = useState(0);
+  const [showComments, setShowComments] = useState(false);
   const { height }= useWindowDimensions();
   
   // In full screen mode (post detail), use full height. In tab mode, subtract tab bar height (90px)
@@ -326,6 +329,30 @@ useEffect(() => {
     };
 
     checkSaveStatus();
+  }, [post.id]);
+
+  // Fetch comment count
+  useEffect(() => {
+    const fetchCommentCount = async () => {
+      try {
+        const { data: postData, error } = await supabase
+          .from('posts')
+          .select('comments_count')
+          .eq('id', post.id)
+          .single();
+
+        if (error && error.code !== 'PGRST116') {
+          console.error('Error fetching comment count:', error);
+          return;
+        }
+
+        setCommentCount(postData?.comments_count || 0);
+      } catch (error) {
+        console.error('Error fetching comment count:', error);
+      }
+    };
+
+    fetchCommentCount();
   }, [post.id]);
 
   // Fetch restaurant data only once when post.restaurant changes
@@ -696,6 +723,29 @@ useEffect(() => {
     }
   }
 
+  const onCommentPress = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    setShowComments(true);
+  }
+
+  const handleCommentsClose = async () => {
+    setShowComments(false);
+    // Refresh comment count after closing
+    try {
+      const { data: postData, error } = await supabase
+        .from('posts')
+        .select('comments_count')
+        .eq('id', post.id)
+        .single();
+
+      if (!error && postData) {
+        setCommentCount(postData.comments_count || 0);
+      }
+    } catch (error) {
+      console.error('Error refreshing comment count:', error);
+    }
+  }
+
   return (
     <View style={[styles.container, {height: adjustedHeight}]}>
       <VideoView 
@@ -791,6 +841,23 @@ useEffect(() => {
               )}
             </TouchableOpacity>
             
+            {/* Comment button */}
+            <TouchableOpacity 
+              style={styles.actionButton} 
+              onPress={onCommentPress}
+              activeOpacity={0.7}
+              pointerEvents="auto"
+            >
+              <Ionicons 
+                name="chatbubble-outline" 
+                size={24} 
+                color="white" 
+              />
+              {commentCount > 0 && (
+                <Text style={styles.actionCount}>{commentCount}</Text>
+              )}
+            </TouchableOpacity>
+            
             {/* Save button */}
             <TouchableOpacity 
               style={styles.actionButton} 
@@ -822,6 +889,13 @@ useEffect(() => {
         </SafeAreaView>
         </Pressable>
 
+      {/* Comment Sheet */}
+      <CommentSheet
+        visible={showComments}
+        onClose={handleCommentsClose}
+        postId={post.id}
+        initialCommentCount={commentCount}
+      />
     </View>
   );
 }
