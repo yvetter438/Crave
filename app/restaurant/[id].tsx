@@ -8,7 +8,8 @@ import {
   Linking,
   SafeAreaView,
   FlatList,
-  Dimensions
+  Dimensions,
+  Image
 } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -29,6 +30,7 @@ interface Post {
   created_at: string;
   video_url: string;
   description: string;
+  thumbnail_url: string | null;
 }
 
 export default function RestaurantPage() {
@@ -68,7 +70,7 @@ export default function RestaurantPage() {
     try {
       const { data, error } = await supabase
         .from('posts')
-        .select('id, video_url, description, created_at')
+        .select('id, video_url, description, created_at, thumbnail_url')
         .eq('restaurant', id)
         .order('created_at', { ascending: false })
         .limit(50);
@@ -152,12 +154,20 @@ export default function RestaurantPage() {
   const renderPost = ({ item }: { item: Post }) => (
     <TouchableOpacity 
       style={styles.postContainer}
-      onPress={() => console.log('Post tapped:', item.id)}
+      onPress={() => router.push(`/post/${item.id}?context=restaurant&contextId=${id}`)}
       activeOpacity={0.8}
     >
-      <View style={styles.postThumbnail}>
-        <Ionicons name="restaurant" size={40} color="rgba(255,255,255,0.3)" />
-      </View>
+      {item.thumbnail_url ? (
+        <Image
+          source={{ uri: item.thumbnail_url }}
+          style={styles.postThumbnail}
+          resizeMode="contain"
+        />
+      ) : (
+        <View style={[styles.postThumbnail, styles.placeholderThumbnail]}>
+          <Ionicons name="restaurant" size={40} color="rgba(255,255,255,0.3)" />
+        </View>
+      )}
       <View style={styles.playIconOverlay}>
         <Ionicons name="play" size={20} color="rgba(255,255,255,0.9)" />
       </View>
@@ -240,7 +250,7 @@ export default function RestaurantPage() {
 
 const screenWidth = Dimensions.get('window').width;
 const postSize = screenWidth / 3 - 4;
-const postHeight = postSize * 1.5;
+const postHeight = postSize * (16 / 9); // 9:16 aspect ratio for vertical videos
 
 const styles = StyleSheet.create({
   container: {
@@ -336,10 +346,13 @@ const styles = StyleSheet.create({
     width: postSize,
     height: postHeight,
     margin: 2,
-    backgroundColor: '#1a1a1a',
+    backgroundColor: '#000',
     borderRadius: 4,
+  },
+  placeholderThumbnail: {
     justifyContent: 'center',
     alignItems: 'center',
+    backgroundColor: '#1a1a1a',
   },
   playIconOverlay: {
     position: 'absolute',

@@ -90,6 +90,12 @@ export default function Tab() {
 
       if (error) {
         console.error('Error fetching ranked feed:', error);
+        
+        // If network error and this is a refresh, try to keep old data
+        if (error.message?.includes('Network') || error.message?.includes('fetch')) {
+          console.log('Network error detected - keeping existing feed');
+        }
+        
         setIsLoading(false);
         setIsRefreshing(false);
         return;
@@ -242,6 +248,10 @@ export default function Tab() {
           tintColor="#fff"
         />
       }
+      removeClippedSubviews={true}
+      maxToRenderPerBatch={3}
+      windowSize={5}
+      initialNumToRender={2}
     />
     </View>
   );

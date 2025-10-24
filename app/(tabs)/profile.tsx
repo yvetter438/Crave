@@ -12,7 +12,8 @@ interface Post {
   created_at: string;
   video_url: string;
   description: string;
-  recipe: string;
+  recipe?: string;
+  thumbnail_url: string | null;
 }
 
 //profile type
@@ -107,7 +108,7 @@ export default function Profile() {
       // OPTIMIZED: Direct user filter query with pagination
       const { data, error } = await supabase
         .from('posts')
-        .select('id, video_url, description, created_at')
+        .select('id, video_url, description, created_at, thumbnail_url')
         .eq('user', userId)
         .order('created_at', { ascending: false })
         .range(offset, offset + limit - 1);
@@ -144,17 +145,17 @@ export default function Profile() {
       }}
       activeOpacity={0.8}
     >
-      <Image
-        source={{ 
-          uri: item.video_url,
-          // For video thumbnails, you might want to use a thumbnail service
-          // or generate thumbnails on your backend
-        }}
-        style={styles.postThumbnail}
-        resizeMode="cover"
-        // Add loading placeholder
-        defaultSource={require('../../assets/images/icon.png')}
-      />
+      {item.thumbnail_url ? (
+        <Image
+          source={{ uri: item.thumbnail_url }}
+          style={styles.postThumbnail}
+          resizeMode="contain"
+        />
+      ) : (
+        <View style={[styles.postThumbnail, styles.placeholderThumbnail]}>
+          <Ionicons name="videocam" size={40} color="rgba(255,255,255,0.3)" />
+        </View>
+      )}
       {/* Optional: Add play icon overlay */}
       <View style={styles.playIconOverlay}>
         <Ionicons name="play" size={20} color="rgba(255,255,255,0.8)" />
@@ -347,7 +348,7 @@ export default function Profile() {
 const screenWidth = Dimensions.get('window').width;
 const screenHeight = Dimensions.get('window').height;
 const postSize = screenWidth / 3 - 4;
-const postHeight = postSize * 1.5;
+const postHeight = postSize * (16 / 9); // 9:16 aspect ratio for vertical videos
 
 const styles = StyleSheet.create({
   container: {
@@ -410,6 +411,11 @@ const styles = StyleSheet.create({
     margin: 2,
     backgroundColor: '#000',
     borderRadius: 4,
+  },
+  placeholderThumbnail: {
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#1a1a1a',
   },
   playIconOverlay: {
     position: 'absolute',

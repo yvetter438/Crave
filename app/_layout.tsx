@@ -1,11 +1,36 @@
 import { Stack } from "expo-router";
 import { AuthProvider } from "@/contexts/AuthContext";
-import { useEffect } from "react";
+import { ActivePostProvider } from "@/context/ActivePostContext";
+import { useEffect, useRef } from "react";
+import { AppState, AppStateStatus } from 'react-native';
 import * as Linking from 'expo-linking';
 import { supabase } from "@/lib/supabase";
 
 export default function RootLayout() {
+  const appState = useRef(AppState.currentState);
+
   useEffect(() => {
+    // Handle app state changes (background/foreground)
+    const handleAppStateChange = async (nextAppState: AppStateStatus) => {
+      if (appState.current.match(/inactive|background/) && nextAppState === 'active') {
+        // App has come to the foreground - refresh auth session
+        console.log('App resumed - refreshing session...');
+        try {
+          const { data: { session }, error } = await supabase.auth.getSession();
+          if (error) {
+            console.error('Error refreshing session on app resume:', error);
+          } else if (session) {
+            console.log('Session refreshed successfully');
+          }
+        } catch (error) {
+          console.error('Failed to refresh session:', error);
+        }
+      }
+      appState.current = nextAppState;
+    };
+
+    const subscription = AppState.addEventListener('change', handleAppStateChange);
+
     // Handle deep link authentication (email confirmation, password reset, etc.)
     const handleDeepLink = async (event: { url: string }) => {
       const url = event.url;
@@ -33,7 +58,7 @@ export default function RootLayout() {
     };
 
     // Listen for incoming deep links
-    const subscription = Linking.addEventListener('url', handleDeepLink);
+    const linkingSubscription = Linking.addEventListener('url', handleDeepLink);
 
     // Check if app was opened with a deep link
     Linking.getInitialURL().then((url) => {
@@ -44,14 +69,17 @@ export default function RootLayout() {
 
     return () => {
       subscription.remove();
+      linkingSubscription.remove();
     };
   }, []);
 
   return (
     <AuthProvider>
-      <Stack screenOptions={{ headerShown: false, gestureEnabled: false}}>
-        <Stack.Screen name="index" />
-      </Stack>
+      <ActivePostProvider>
+        <Stack screenOptions={{ headerShown: false, gestureEnabled: false}}>
+          <Stack.Screen name="index" />
+        </Stack>
+      </ActivePostProvider>
     </AuthProvider>
   );
 }

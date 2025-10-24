@@ -34,6 +34,7 @@ interface Post {
   created_at: string;
   video_url: string;
   description: string;
+  thumbnail_url: string | null;
 }
 
 export default function UserProfile() {
@@ -85,7 +86,7 @@ export default function UserProfile() {
     try {
       const { data, error } = await supabase
         .from('posts')
-        .select('id, video_url, description, created_at')
+        .select('id, video_url, description, created_at, thumbnail_url')
         .eq('user', id)
         .order('created_at', { ascending: false })
         .limit(50);
@@ -186,14 +187,20 @@ export default function UserProfile() {
   const renderPost = ({ item }: { item: Post }) => (
     <TouchableOpacity 
       style={styles.postContainer}
-      onPress={() => console.log('Post tapped:', item.id)}
+      onPress={() => router.push(`/post/${item.id}?context=profile&contextId=${id}`)}
       activeOpacity={0.8}
     >
-      <Image
-        source={{ uri: item.video_url }}
-        style={styles.postThumbnail}
-        resizeMode="cover"
-      />
+      {item.thumbnail_url ? (
+        <Image
+          source={{ uri: item.thumbnail_url }}
+          style={styles.postThumbnail}
+          resizeMode="contain"
+        />
+      ) : (
+        <View style={[styles.postThumbnail, styles.placeholderThumbnail]}>
+          <Ionicons name="videocam" size={40} color="rgba(255,255,255,0.3)" />
+        </View>
+      )}
       <View style={styles.playIconOverlay}>
         <Ionicons name="play" size={20} color="rgba(255,255,255,0.8)" />
       </View>
@@ -352,7 +359,7 @@ export default function UserProfile() {
 
 const screenWidth = Dimensions.get('window').width;
 const postSize = screenWidth / 3 - 4;
-const postHeight = postSize * 1.5;
+const postHeight = postSize * (16 / 9); // 9:16 aspect ratio for vertical videos
 
 const styles = StyleSheet.create({
   container: {
@@ -488,6 +495,11 @@ const styles = StyleSheet.create({
     margin: 2,
     backgroundColor: '#000',
     borderRadius: 4,
+  },
+  placeholderThumbnail: {
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#1a1a1a',
   },
   playIconOverlay: {
     position: 'absolute',

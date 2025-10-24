@@ -1,13 +1,11 @@
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { Tabs } from 'expo-router';
-import { ActivePostProvider } from '@/context/ActivePostContext';
 import { Colors } from '@/constants/Colors';
 import { CraveTabIcon } from '@/components/CraveTabIcon';
 
 export default function TabLayout() {
   return (
-    <ActivePostProvider>
     <Tabs screenOptions={{ 
       tabBarStyle: {
         backgroundColor: Colors.background,
@@ -60,7 +58,6 @@ export default function TabLayout() {
         }}
       />
     </Tabs>
-    </ActivePostProvider>
   );
 }
 

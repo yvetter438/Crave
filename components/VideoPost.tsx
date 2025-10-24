@@ -4,7 +4,6 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRef, useState, useEffect } from 'react';
-import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs';
 import { Platform, Share } from 'react-native';
 import { router } from 'expo-router';
 import { supabase } from '../lib/supabase';
@@ -27,6 +26,7 @@ type VideoPost = {
     };
     activePostId: string;
     shouldPlay: boolean;
+    isFullScreen?: boolean; // Optional prop to indicate full screen mode (no tab bar)
 };
 
 type Profile = {
@@ -47,7 +47,7 @@ type Restaurant = {
 };
 
 
-export default function VideoPost({post, activePostId, shouldPlay }: VideoPost) {
+export default function VideoPost({post, activePostId, shouldPlay, isFullScreen = false }: VideoPost) {
   const player = useVideoPlayer(post.video_url, (player) => {
     player.loop = true;
     player.muted = false;
@@ -93,7 +93,9 @@ export default function VideoPost({post, activePostId, shouldPlay }: VideoPost) 
   const [saveCount, setSaveCount] = useState(0);
   const [restaurant, setRestaurant] = useState<Restaurant | null>(null);
   const { height }= useWindowDimensions();
-  const tabBarHeight: number = useBottomTabBarHeight();
+  
+  // In full screen mode (post detail), use full height. In tab mode, subtract tab bar height (90px)
+  const tabBarHeight: number = isFullScreen ? 0 : 90;
   const adjustedHeight: number = height - tabBarHeight;
   
   // Track playing state manually
@@ -537,12 +539,37 @@ useEffect(() => {
       player.pause();
       setIsPlaying(false);
       
-      const shareUrl = 'https://apps.apple.com/us/app/crave-discover-eat-share/id6740149234';
+      // Create deep link to this specific video
+      const deepLink = `crave://post/${post.id}`;
+      const appStoreUrl = 'https://apps.apple.com/us/app/crave-discover-eat-share/id6740149234';
+      
+      // Get post description (truncate if too long)
+      const description = post.description?.substring(0, 80) || 'Check out this video on Crave';
+      const truncatedDescription = post.description && post.description.length > 80 
+        ? `${description}...` 
+        : description;
+      
+      // Create one unified message (like Instagram/TikTok)
+      const shareMessage = `${truncatedDescription}\n\n🔗 ${deepLink}\n\n📱 Get Crave: ${appStoreUrl}`;
+      
       await Share.share({
-        message: `Check out Crave - Discover new eats in your city! ${shareUrl}`,
-        url: shareUrl,
-        title: 'Crave: Discover, Eat, Share',
+        message: shareMessage,
+        // Don't use separate 'url' parameter - it creates multiple messages on iOS
+        title: 'Check out this video on Crave!',
       });
+      
+      // Log share event
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+          await supabase.rpc('log_share_event', {
+            p_post_id: parseInt(post.id),
+            p_user_id: user.id
+          });
+        }
+      } catch (error) {
+        console.error('Error logging share event:', error);
+      }
       
       // Resume video after sharing if this is still the active post
       setTimeout(() => {
