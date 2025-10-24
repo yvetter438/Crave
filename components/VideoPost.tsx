@@ -10,6 +10,7 @@ import { supabase } from '../lib/supabase';
 import { Colors } from '@/constants/Colors';
 import * as Haptics from 'expo-haptics';
 import CommentSheet from './CommentSheet';
+import ReportModal from './ReportModal';
 
 // Add this interface to handle the status type properly
 type AVPlaybackStatusSuccess = AVPlaybackStatus & {
@@ -95,6 +96,7 @@ export default function VideoPost({post, activePostId, shouldPlay, isFullScreen 
   const [restaurant, setRestaurant] = useState<Restaurant | null>(null);
   const [commentCount, setCommentCount] = useState(0);
   const [showComments, setShowComments] = useState(false);
+  const [showReportModal, setShowReportModal] = useState(false);
   const { height }= useWindowDimensions();
   
   // In full screen mode (post detail), use full height. In tab mode, subtract tab bar height (90px)
@@ -728,6 +730,11 @@ useEffect(() => {
     setShowComments(true);
   }
 
+  const onReportPress = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    setShowReportModal(true);
+  }
+
   const handleCommentsClose = async () => {
     setShowComments(false);
     // Refresh comment count after closing
@@ -884,6 +891,16 @@ useEffect(() => {
             >
               <Ionicons name="share-outline" size={24} color="white" />
             </TouchableOpacity>
+            
+            {/* Report button */}
+            <TouchableOpacity 
+              style={styles.actionButton} 
+              onPress={onReportPress}
+              activeOpacity={0.7}
+              pointerEvents="auto"
+            >
+              <Ionicons name="ellipsis-horizontal" size={24} color="white" />
+            </TouchableOpacity>
           </View>
         </View>
         </SafeAreaView>
@@ -895,6 +912,15 @@ useEffect(() => {
         onClose={handleCommentsClose}
         postId={post.id}
         initialCommentCount={commentCount}
+      />
+
+      {/* Report Modal */}
+      <ReportModal
+        visible={showReportModal}
+        onClose={() => setShowReportModal(false)}
+        targetType="post"
+        targetId={parseInt(post.id, 10)}
+        targetDescription={`@${profile?.username || 'anonymous'}'s post`}
       />
     </View>
   );

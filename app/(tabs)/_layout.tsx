@@ -43,13 +43,16 @@ export default function TabLayout() {
           ),
         }}
       />
-      {/* <Tabs.Screen
+      <Tabs.Screen
         name="upload"
         options={{
           title: 'Upload',
-          tabBarIcon: ({ color }) => <FontAwesome size={28} name="plus-square-o" color={color} />,
+          headerShown: false,
+          tabBarIcon: ({ color, focused }) => (
+            <Ionicons size={26} name={focused ? 'add-circle' : 'add-circle-outline'} color={color} />
+          ),
         }}
-      /> */}
+      />
       <Tabs.Screen
         name="profile"
         options={{

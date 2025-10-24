@@ -1,6 +1,6 @@
 import VideoPost from '@/components/VideoPost';
 import EndOfFeedCard from '@/components/EndOfFeedCard';
-import { View,  StyleSheet, FlatList, AppState, RefreshControl  } from 'react-native';
+import { View, Text, StyleSheet, FlatList, AppState, RefreshControl  } from 'react-native';
 import { useState, useRef, useEffect, useCallback } from 'react';
 // COMMENTED OUT: Gesture handler imports since we're not using swipe anymore
 // import { GestureHandlerRootView, Gesture, GestureDetector } from 'react-native-gesture-handler';
@@ -10,6 +10,7 @@ import { supabase } from '../../lib/supabase';
 // import { runOnJS } from 'react-native-reanimated';
 import { useActivePost } from '@/context/ActivePostContext';
 import { useFocusEffect } from '@react-navigation/native';
+import { Ionicons } from '@expo/vector-icons';
 
 export default function Tab() {
   const { activePostId, setActivePostId}  = useActivePost();
@@ -81,7 +82,8 @@ export default function Tab() {
       console.log(`📊 Fetching feed - Offset: ${currentOffset}, Seed: ${currentSeed.toFixed(6)}`);
 
       // Call the ranked feed RPC function with offset and seed
-      const { data, error } = await supabase.rpc('get_ranked_feed_offset', {
+      // Use moderation-aware feed function that filters blocked users and only shows approved posts
+      const { data, error } = await supabase.rpc('get_ranked_feed_with_moderation', {
         p_user_id: user.id,
         p_limit: 10,
         p_offset: currentOffset,
@@ -109,38 +111,57 @@ export default function Tab() {
         return;
       }
 
-      // Format the data
-      const formattedData = data.map((item: any) => ({
-        id: item.id.toString(),
-        video_url: item.video_url,
-        description: item.description,
-        user: item.user_id,
-        restaurant: item.restaurant,
-      }));
-
-      // DEBUG: Log post IDs to check for duplicates
-      console.log('Fetched post IDs:', formattedData.map(p => p.id).join(', '));
+      // Format the data and generate video URLs
+      const formattedData = data.map((item: any) => {
+        // Generate full video URL from storage path
+        // If video_url is already a full URL (starts with http), use it as-is
+        // Otherwise, determine which bucket and generate URL
+        let videoUrl = item.video_url;
+        if (!videoUrl.startsWith('http')) {
+          // Check if it's in the new private bucket (videos) or old public bucket (posts-videos)
+          // New uploads go to 'videos' bucket, old ones are in 'posts-videos'
+          // If path contains userId folder structure, it's in 'videos' bucket
+          const isNewVideo = videoUrl.includes('/');
+          
+          if (isNewVideo) {
+            // New video in private 'videos' bucket - generate public URL
+            const { data: urlData } = supabase.storage
+              .from('videos')
+              .getPublicUrl(videoUrl);
+            videoUrl = urlData.publicUrl;
+          } else {
+            // Old video in public 'posts-videos' bucket
+            const { data: urlData } = supabase.storage
+              .from('posts-videos')
+              .getPublicUrl(videoUrl);
+            videoUrl = urlData.publicUrl;
+          }
+        }
+        
+        return {
+          id: item.id.toString(),
+          video_url: videoUrl,
+          description: item.description,
+          user: item.user_id,
+          restaurant: item.restaurant,
+        };
+      });
       
       if (resetFeed) {
         // Replace posts with fresh feed
         setPosts(formattedData);
         setOffset(10); // Next offset
-        console.log('RESET: Total posts in feed:', formattedData.length);
       } else {
-        // Append to existing posts
+        // Append to existing posts with deduplication
         setPosts((currentPosts) => {
-          const newPosts = [...currentPosts, ...formattedData];
-          console.log('APPEND: Total posts in feed:', newPosts.length);
+          // Create a Set of existing post IDs for fast lookup
+          const existingIds = new Set(currentPosts.map(p => p.id));
           
-          // DEBUG: Check for duplicates
-          const postIds = newPosts.map(p => p.id);
-          const uniqueIds = new Set(postIds);
-          if (postIds.length !== uniqueIds.size) {
-            console.error('🚨 DUPLICATE DETECTED IN FEED!');
-            console.error('Duplicate post IDs:', postIds.filter((id, idx) => postIds.indexOf(id) !== idx));
-          }
+          // Filter out duplicates from new data
+          const uniqueNewPosts = formattedData.filter(post => !existingIds.has(post.id));
           
-          return newPosts;
+          // Combine current posts with unique new posts
+          return [...currentPosts, ...uniqueNewPosts];
         });
         setOffset(currentOffset + 10);
       }
@@ -219,6 +240,28 @@ export default function Tab() {
     ? [...posts, { id: 'end-of-feed', isEndCard: true }]
     : posts;
 
+  // Empty state component
+  const renderEmptyState = () => {
+    if (isLoading || isRefreshing) {
+      return null; // Don't show empty state while loading
+    }
+
+    return (
+      <View style={styles.emptyStateContainer}>
+        <View style={styles.emptyStateContent}>
+          <Ionicons name="restaurant-outline" size={80} color="rgba(255,255,255,0.3)" />
+          <Text style={styles.emptyStateTitle}>No Posts Yet</Text>
+          <Text style={styles.emptyStateSubtitle}>
+            New food content is being prepared!{'\n'}Check back soon to see delicious posts.
+          </Text>
+          <Text style={styles.emptyStateHint}>
+            Pull down to refresh
+          </Text>
+        </View>
+      </View>
+    );
+  };
+
   return (
     <View style={styles.container}>
       <FlatList
@@ -241,6 +284,7 @@ export default function Tab() {
       showsVerticalScrollIndicator={false}
       onEndReached={onEndReached}
       onEndReachedThreshold={1}
+      ListEmptyComponent={renderEmptyState}
       refreshControl={
         <RefreshControl
           refreshing={isRefreshing}
@@ -261,5 +305,39 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: 'black',
+  },
+  emptyStateContainer: {
+    flex: 1,
+    height: '100%',
+    minHeight: 600,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'black',
+    paddingHorizontal: 40,
+  },
+  emptyStateContent: {
+    alignItems: 'center',
+    maxWidth: 300,
+  },
+  emptyStateTitle: {
+    fontSize: 28,
+    fontWeight: '700',
+    color: 'white',
+    marginTop: 24,
+    marginBottom: 12,
+    textAlign: 'center',
+  },
+  emptyStateSubtitle: {
+    fontSize: 16,
+    color: 'rgba(255,255,255,0.7)',
+    textAlign: 'center',
+    lineHeight: 24,
+    marginBottom: 24,
+  },
+  emptyStateHint: {
+    fontSize: 14,
+    color: 'rgba(255,255,255,0.4)',
+    textAlign: 'center',
+    fontStyle: 'italic',
   },
 });

@@ -12,6 +12,7 @@ import { supabase } from '../lib/supabase';
 import { Colors } from '@/constants/Colors';
 import * as Haptics from 'expo-haptics';
 import CommentReplies from './CommentReplies';
+import ReportModal from './ReportModal';
 
 type CommentData = {
   id: number;
@@ -42,6 +43,7 @@ export default function Comment({ comment, onReply, onLikeUpdate, currentUserId,
   const [isLiking, setIsLiking] = useState(false);
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [showReplies, setShowReplies] = useState(false);
+  const [showReportModal, setShowReportModal] = useState(false);
 
   // Get avatar URL
   useEffect(() => {
@@ -121,6 +123,11 @@ export default function Comment({ comment, onReply, onLikeUpdate, currentUserId,
 
   const displayName = comment.displayname || comment.username;
 
+  const handleReport = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    setShowReportModal(true);
+  };
+
   return (
     <View style={[styles.container, isReply && styles.replyContainer]}>
       <View style={styles.commentContent}>
@@ -194,6 +201,17 @@ export default function Comment({ comment, onReply, onLikeUpdate, currentUserId,
                 </Text>
               </TouchableOpacity>
             )}
+
+            {/* Report button - only show if not own comment */}
+            {currentUserId !== comment.user_id && (
+              <TouchableOpacity
+                onPress={handleReport}
+                style={styles.actionButton}
+                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+              >
+                <Ionicons name="flag-outline" size={14} color="#999" />
+              </TouchableOpacity>
+            )}
           </View>
         </View>
       </View>
@@ -207,6 +225,15 @@ export default function Comment({ comment, onReply, onLikeUpdate, currentUserId,
           parentComment={comment}
         />
       )}
+
+      {/* Report Modal */}
+      <ReportModal
+        visible={showReportModal}
+        onClose={() => setShowReportModal(false)}
+        targetType="comment"
+        targetId={comment.id}
+        targetDescription={`@${comment.username}'s comment`}
+      />
     </View>
   );
 }

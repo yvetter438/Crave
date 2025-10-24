@@ -14,6 +14,7 @@ import {
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { supabase } from '../../lib/supabase';
+import BlockUserModal from '../../components/BlockUserModal';
 
 interface Profile {
   id: number;
@@ -46,6 +47,7 @@ export default function UserProfile() {
   const [loading, setLoading] = useState(true);
   const [isFollowing, setIsFollowing] = useState(false);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  const [showBlockModal, setShowBlockModal] = useState(false);
 
   useEffect(() => {
     fetchCurrentUser();
@@ -88,6 +90,7 @@ export default function UserProfile() {
         .from('posts')
         .select('id, video_url, description, created_at, thumbnail_url')
         .eq('user', id)
+        .eq('status', 'approved') // Only show approved posts
         .order('created_at', { ascending: false })
         .limit(50);
 
@@ -182,6 +185,11 @@ export default function UserProfile() {
     } catch (error) {
       console.error('Error opening Instagram:', error);
     }
+  };
+
+  const handleBlockSuccess = () => {
+    // Navigate back after blocking
+    router.back();
   };
 
   const renderPost = ({ item }: { item: Post }) => (
@@ -335,17 +343,27 @@ export default function UserProfile() {
               </View>
             </View>
 
-            {/* Follow Button */}
+            {/* Follow and Block Buttons */}
             {currentUserId && id !== currentUserId && (
-              <TouchableOpacity
-                style={[styles.followButton, isFollowing && styles.followingButton]}
-                onPress={handleFollowToggle}
-                activeOpacity={0.7}
-              >
-                <Text style={[styles.followButtonText, isFollowing && styles.followingButtonText]}>
-                  {isFollowing ? 'Following' : 'Follow'}
-                </Text>
-              </TouchableOpacity>
+              <View style={styles.actionsContainer}>
+                <TouchableOpacity
+                  style={[styles.followButton, isFollowing && styles.followingButton]}
+                  onPress={handleFollowToggle}
+                  activeOpacity={0.7}
+                >
+                  <Text style={[styles.followButtonText, isFollowing && styles.followingButtonText]}>
+                    {isFollowing ? 'Following' : 'Follow'}
+                  </Text>
+                </TouchableOpacity>
+                
+                <TouchableOpacity
+                  style={styles.blockButton}
+                  onPress={() => setShowBlockModal(true)}
+                  activeOpacity={0.7}
+                >
+                  <Ionicons name="ellipsis-horizontal" size={20} color="#666" />
+                </TouchableOpacity>
+              </View>
             )}
           </>
         )}
@@ -353,6 +371,17 @@ export default function UserProfile() {
         ListEmptyComponent={renderEmptyState}
         showsVerticalScrollIndicator={false}
       />
+
+      {/* Block User Modal */}
+      {profile && (
+        <BlockUserModal
+          visible={showBlockModal}
+          onClose={() => setShowBlockModal(false)}
+          userId={profile.user_id}
+          username={profile.username}
+          onBlockSuccess={handleBlockSuccess}
+        />
+      )}
     </SafeAreaView>
   );
 }
@@ -460,13 +489,17 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#888',
   },
+  actionsContainer: {
+    flexDirection: 'row',
+    alignSelf: 'center',
+    marginBottom: 20,
+    gap: 8,
+  },
   followButton: {
     backgroundColor: '#0095f6',
     paddingVertical: 8,
     paddingHorizontal: 24,
     borderRadius: 8,
-    alignSelf: 'center',
-    marginBottom: 20,
     minWidth: 120,
     alignItems: 'center',
   },
@@ -482,6 +515,15 @@ const styles = StyleSheet.create({
   },
   followingButtonText: {
     color: '#000',
+  },
+  blockButton: {
+    width: 40,
+    backgroundColor: '#f0f0f0',
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: '#dbdbdb',
   },
   postsContainer: {
     paddingHorizontal: 0,

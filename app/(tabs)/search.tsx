@@ -196,7 +196,7 @@ export default function SearchScreen() {
       return (
         <View style={styles.emptyState}>
           <Ionicons name="search" size={64} color="#ddd" />
-          <Text style={styles.emptyStateTitle}>Search for people & restaurants</Text>
+          <Text style={styles.emptyStateTitle}>Search for people & restaurants & cuisines</Text>
           <Text style={styles.emptyStateText}>
             Find friends or discover restaurants by name or cuisine
           </Text>

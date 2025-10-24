@@ -72,6 +72,7 @@ export default function RestaurantPage() {
         .from('posts')
         .select('id, video_url, description, created_at, thumbnail_url')
         .eq('restaurant', id)
+        .eq('status', 'approved') // Only show approved posts
         .order('created_at', { ascending: false })
         .limit(50);
 

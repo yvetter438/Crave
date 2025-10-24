@@ -140,8 +140,10 @@ export default function Profile() {
     <TouchableOpacity 
       style={styles.postContainer}
       onPress={() => {
-        // Navigate to video or show in modal
-        console.log('Post tapped:', item.id);
+        // Navigate to post detail page with profile context
+        if (session?.user?.id) {
+          router.push(`/post/${item.id}?context=profile&contextId=${session.user.id}`);
+        }
       }}
       activeOpacity={0.8}
     >
