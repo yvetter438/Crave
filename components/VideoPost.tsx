@@ -782,9 +782,10 @@ useEffect(() => {
   };
 
   const handleBlockSuccess = () => {
-    // Navigate back to feed after blocking user
+    // Close the modal and let the feed refresh naturally
     // The feed will automatically filter out this user's posts
-    router.back();
+    setShowBlockModal(false);
+    // Don't navigate back - just let the user continue watching
   };
 
   const handleCommentsClose = async () => {
