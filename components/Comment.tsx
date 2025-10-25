@@ -6,6 +6,9 @@ import {
   TouchableOpacity,
   Image,
   ActivityIndicator,
+  ActionSheetIOS,
+  Platform,
+  Alert,
 } from 'react-native';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { supabase } from '../lib/supabase';
@@ -13,6 +16,7 @@ import { Colors } from '@/constants/Colors';
 import * as Haptics from 'expo-haptics';
 import CommentReplies from './CommentReplies';
 import ReportModal from './ReportModal';
+import BlockUserModal from './BlockUserModal';
 
 type CommentData = {
   id: number;
@@ -35,15 +39,17 @@ type CommentProps = {
   onLikeUpdate: () => void;
   currentUserId: string | null;
   isReply?: boolean;
+  onCommentRemoved?: () => void; // Callback when comment is hidden due to user block
 };
 
-export default function Comment({ comment, onReply, onLikeUpdate, currentUserId, isReply = false }: CommentProps) {
+export default function Comment({ comment, onReply, onLikeUpdate, currentUserId, isReply = false, onCommentRemoved }: CommentProps) {
   const [isLiked, setIsLiked] = useState(comment.is_liked_by_user);
   const [likesCount, setLikesCount] = useState(comment.likes_count);
   const [isLiking, setIsLiking] = useState(false);
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [showReplies, setShowReplies] = useState(false);
   const [showReportModal, setShowReportModal] = useState(false);
+  const [showBlockModal, setShowBlockModal] = useState(false);
 
   // Get avatar URL
   useEffect(() => {
@@ -123,9 +129,48 @@ export default function Comment({ comment, onReply, onLikeUpdate, currentUserId,
 
   const displayName = comment.displayname || comment.username;
 
-  const handleReport = () => {
+  const handleMoreOptions = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    setShowReportModal(true);
+    
+    if (Platform.OS === 'ios') {
+      // iOS Action Sheet
+      ActionSheetIOS.showActionSheetWithOptions(
+        {
+          options: ['Cancel', 'Report Comment', 'Block User'],
+          destructiveButtonIndex: 2,
+          cancelButtonIndex: 0,
+          title: 'Comment Options',
+        },
+        (buttonIndex) => {
+          if (buttonIndex === 1) {
+            setShowReportModal(true);
+          } else if (buttonIndex === 2) {
+            setShowBlockModal(true);
+          }
+        }
+      );
+    } else {
+      // Android - use Alert with buttons
+      Alert.alert(
+        'Comment Options',
+        'Choose an action',
+        [
+          { text: 'Cancel', style: 'cancel' },
+          { text: 'Report Comment', onPress: () => setShowReportModal(true) },
+          {
+            text: 'Block User',
+            onPress: () => setShowBlockModal(true),
+            style: 'destructive',
+          },
+        ],
+        { cancelable: true }
+      );
+    }
+  };
+
+  const handleBlockSuccess = () => {
+    // Notify parent that comment should be removed from view
+    onCommentRemoved?.();
   };
 
   return (
@@ -202,14 +247,14 @@ export default function Comment({ comment, onReply, onLikeUpdate, currentUserId,
               </TouchableOpacity>
             )}
 
-            {/* Report button - only show if not own comment */}
+            {/* More options button - only show if not own comment */}
             {currentUserId !== comment.user_id && (
               <TouchableOpacity
-                onPress={handleReport}
+                onPress={handleMoreOptions}
                 style={styles.actionButton}
                 hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
               >
-                <Ionicons name="flag-outline" size={14} color="#999" />
+                <Ionicons name="ellipsis-horizontal" size={16} color="#999" />
               </TouchableOpacity>
             )}
           </View>
@@ -233,6 +278,15 @@ export default function Comment({ comment, onReply, onLikeUpdate, currentUserId,
         targetType="comment"
         targetId={comment.id}
         targetDescription={`@${comment.username}'s comment`}
+      />
+
+      {/* Block User Modal */}
+      <BlockUserModal
+        visible={showBlockModal}
+        onClose={() => setShowBlockModal(false)}
+        userId={comment.user_id}
+        username={comment.username}
+        onBlockSuccess={handleBlockSuccess}
       />
     </View>
   );

@@ -41,9 +41,10 @@ export default function CommentReplies({ commentId, currentUserId, onReply, pare
   const fetchReplies = async () => {
     setIsLoading(true);
     try {
+      // Use the new moderation-aware function that filters blocked users
       const { data, error } = await supabase
-        .rpc('get_comment_replies', {
-          p_comment_id: commentId,
+        .rpc('get_comment_replies_with_moderation', {
+          p_parent_comment_id: commentId,
           p_user_id: currentUserId
         });
 
@@ -84,6 +85,7 @@ export default function CommentReplies({ commentId, currentUserId, onReply, pare
           onLikeUpdate={fetchReplies}
           currentUserId={currentUserId}
           isReply
+          onCommentRemoved={fetchReplies}
         />
       ))}
     </View>

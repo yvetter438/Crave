@@ -14,6 +14,7 @@ import {
   Keyboard,
   TouchableWithoutFeedback,
   PanResponder,
+  Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Ionicons from '@expo/vector-icons/Ionicons';
@@ -21,6 +22,7 @@ import { supabase } from '../lib/supabase';
 import { Colors } from '@/constants/Colors';
 import Comment from './Comment';
 import * as Haptics from 'expo-haptics';
+import { validateCommentText, containsSpam } from '@/utils/profanityFilter';
 
 type CommentData = {
   id: number;
@@ -142,8 +144,9 @@ export default function CommentSheet({ visible, onClose, postId, initialCommentC
     try {
       const { data: { user } } = await supabase.auth.getUser();
       
+      // Use the new moderation-aware RPC function that filters blocked users
       const { data, error } = await supabase
-        .rpc('get_comments_with_metadata', {
+        .rpc('get_comments_with_moderation', {
           p_post_id: parseInt(postId),
           p_user_id: user?.id || null
         });
@@ -166,6 +169,22 @@ export default function CommentSheet({ visible, onClose, postId, initialCommentC
   const postComment = async () => {
     if (!commentText.trim() || isPosting || !currentUserId) return;
 
+    // Validate comment text for profanity and spam
+    const validation = validateCommentText(commentText);
+    if (!validation.isValid) {
+      Alert.alert('Cannot Post Comment', validation.error);
+      return;
+    }
+
+    // Check for spam patterns
+    if (containsSpam(commentText)) {
+      Alert.alert(
+        'Potential Spam Detected',
+        'Your comment appears to contain spam. Please revise and try again.',
+      );
+      return;
+    }
+
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     setIsPosting(true);
 
@@ -177,12 +196,15 @@ export default function CommentSheet({ visible, onClose, postId, initialCommentC
           user_id: currentUserId,
           text: commentText.trim(),
           parent_comment_id: replyingTo?.id || null,
+          status: 'visible', // Explicitly set status
         })
         .select()
         .single();
 
       if (error) {
         console.error('Error posting comment:', error);
+        console.error('Error details:', JSON.stringify(error, null, 2));
+        Alert.alert('Error', `Failed to post comment: ${error.message || 'Please try again.'}`);
         return;
       }
 
@@ -195,6 +217,7 @@ export default function CommentSheet({ visible, onClose, postId, initialCommentC
       await fetchComments();
     } catch (error) {
       console.error('Error posting comment:', error);
+      Alert.alert('Error', 'An unexpected error occurred. Please try again.');
     } finally {
       setIsPosting(false);
     }
@@ -242,6 +265,7 @@ export default function CommentSheet({ visible, onClose, postId, initialCommentC
       onReply={handleReply}
       onLikeUpdate={fetchComments}
       currentUserId={currentUserId}
+      onCommentRemoved={fetchComments}
     />
   ), [currentUserId]);
 

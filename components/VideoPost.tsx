@@ -1,4 +1,4 @@
-import { View, Text, StyleSheet, Pressable, useWindowDimensions, TouchableOpacity, Image, AppState } from 'react-native';
+import { View, Text, StyleSheet, Pressable, useWindowDimensions, TouchableOpacity, Image, AppState, ActionSheetIOS, Alert } from 'react-native';
 import { VideoView, useVideoPlayer } from 'expo-video';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Ionicons from '@expo/vector-icons/Ionicons';
@@ -11,6 +11,7 @@ import { Colors } from '@/constants/Colors';
 import * as Haptics from 'expo-haptics';
 import CommentSheet from './CommentSheet';
 import ReportModal from './ReportModal';
+import BlockUserModal from './BlockUserModal';
 
 // Add this interface to handle the status type properly
 type AVPlaybackStatusSuccess = AVPlaybackStatus & {
@@ -97,6 +98,7 @@ export default function VideoPost({post, activePostId, shouldPlay, isFullScreen 
   const [commentCount, setCommentCount] = useState(0);
   const [showComments, setShowComments] = useState(false);
   const [showReportModal, setShowReportModal] = useState(false);
+  const [showBlockModal, setShowBlockModal] = useState(false);
   const { height }= useWindowDimensions();
   
   // In full screen mode (post detail), use full height. In tab mode, subtract tab bar height (90px)
@@ -730,10 +732,60 @@ useEffect(() => {
     setShowComments(true);
   }
 
-  const onReportPress = () => {
+  const onReportPress = async () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    setShowReportModal(true);
-  }
+    
+    // Check if viewing own post
+    const { data: { user } } = await supabase.auth.getUser();
+    const isOwnPost = user?.id === post.user;
+    
+    if (isOwnPost) {
+      // Show limited options for own post
+      Alert.alert('Post Options', 'More options coming soon!');
+      return;
+    }
+    
+    if (Platform.OS === 'ios') {
+      // iOS Action Sheet
+      ActionSheetIOS.showActionSheetWithOptions(
+        {
+          options: ['Cancel', 'Report Post', 'Block User'],
+          destructiveButtonIndex: 2,
+          cancelButtonIndex: 0,
+          title: 'Post Options',
+        },
+        (buttonIndex) => {
+          if (buttonIndex === 1) {
+            setShowReportModal(true);
+          } else if (buttonIndex === 2) {
+            setShowBlockModal(true);
+          }
+        }
+      );
+    } else {
+      // Android - use Alert with buttons
+      Alert.alert(
+        'Post Options',
+        'Choose an action',
+        [
+          { text: 'Cancel', style: 'cancel' },
+          { text: 'Report Post', onPress: () => setShowReportModal(true) },
+          {
+            text: 'Block User',
+            onPress: () => setShowBlockModal(true),
+            style: 'destructive',
+          },
+        ],
+        { cancelable: true }
+      );
+    }
+  };
+
+  const handleBlockSuccess = () => {
+    // Navigate back to feed after blocking user
+    // The feed will automatically filter out this user's posts
+    router.back();
+  };
 
   const handleCommentsClose = async () => {
     setShowComments(false);
@@ -922,6 +974,17 @@ useEffect(() => {
         targetId={parseInt(post.id, 10)}
         targetDescription={`@${profile?.username || 'anonymous'}'s post`}
       />
+
+      {/* Block User Modal */}
+      {profile && (
+        <BlockUserModal
+          visible={showBlockModal}
+          onClose={() => setShowBlockModal(false)}
+          userId={post.user}
+          username={profile.username}
+          onBlockSuccess={handleBlockSuccess}
+        />
+      )}
     </View>
   );
 }
