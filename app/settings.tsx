@@ -587,6 +587,29 @@ export default function Settings() {
           </TouchableOpacity>
         </View>
 
+        {/* Legal & Support Section */}
+        <View style={styles.legalSection}>
+          <Text style={styles.sectionTitle}>Legal & Support</Text>
+          
+          <TouchableOpacity 
+            style={styles.legalButton} 
+            onPress={() => router.push('/terms')}
+          >
+            <Ionicons name="document-text" size={20} color="#666" style={styles.legalIcon} />
+            <Text style={styles.legalButtonText}>Terms of Service</Text>
+            <Ionicons name="chevron-forward" size={16} color="#ccc" />
+          </TouchableOpacity>
+          
+          <TouchableOpacity 
+            style={styles.legalButton} 
+            onPress={() => router.push('/guidelines')}
+          >
+            <Ionicons name="people" size={20} color="#666" style={styles.legalIcon} />
+            <Text style={styles.legalButtonText}>Community Guidelines</Text>
+            <Ionicons name="chevron-forward" size={16} color="#ccc" />
+          </TouchableOpacity>
+        </View>
+
         {/* Account Actions */}
         <View style={styles.actionsSection}>
           {/* Moderator Dashboard - Only show for moderators */}
@@ -764,5 +787,33 @@ const styles = StyleSheet.create({
   },
   deleteButtonText: {
     color: '#ed4956',
+  },
+  legalSection: {
+    marginTop: 30,
+    marginBottom: 20,
+  },
+  sectionTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#333',
+    marginBottom: 12,
+    paddingHorizontal: 16,
+  },
+  legalButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    backgroundColor: '#fff',
+    borderBottomWidth: 0.5,
+    borderBottomColor: '#f0f0f0',
+  },
+  legalIcon: {
+    marginRight: 12,
+  },
+  legalButtonText: {
+    flex: 1,
+    fontSize: 16,
+    color: '#333',
   },
 });

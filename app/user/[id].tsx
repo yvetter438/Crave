@@ -48,12 +48,34 @@ export default function UserProfile() {
   const [isFollowing, setIsFollowing] = useState(false);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [showBlockModal, setShowBlockModal] = useState(false);
+  const [isBlocked, setIsBlocked] = useState(false);
 
   useEffect(() => {
-    fetchCurrentUser();
-    fetchProfile();
-    fetchUserPosts();
-  }, [id]);
+    const initializeProfile = async () => {
+      await fetchCurrentUser();
+      await fetchProfile();
+      await checkBlockStatus();
+      // Only fetch posts if not blocked
+      if (!isBlocked) {
+        await fetchUserPosts();
+      } else {
+        setLoading(false);
+      }
+    };
+    
+    initializeProfile();
+  }, [id, currentUserId]);
+
+  // Separate useEffect to handle posts when block status changes
+  useEffect(() => {
+    if (currentUserId && id && !isBlocked) {
+      fetchUserPosts();
+    } else if (isBlocked) {
+      setPosts([]);
+      setPostCount(0);
+      setLoading(false);
+    }
+  }, [isBlocked, currentUserId, id]);
 
   const fetchCurrentUser = async () => {
     const { data: { user } } = await supabase.auth.getUser();
@@ -85,6 +107,14 @@ export default function UserProfile() {
   };
 
   const fetchUserPosts = async () => {
+    // Don't fetch posts if user is blocked
+    if (isBlocked) {
+      setPosts([]);
+      setPostCount(0);
+      setLoading(false);
+      return;
+    }
+
     try {
       const { data, error } = await supabase
         .from('posts')
@@ -121,6 +151,24 @@ export default function UserProfile() {
       setIsFollowing(data || false);
     } catch (error) {
       console.error('Error checking follow status:', error);
+    }
+  };
+
+  const checkBlockStatus = async () => {
+    if (!currentUserId || !id) return;
+
+    try {
+      const { data } = await supabase
+        .from('user_blocks')
+        .select('id')
+        .eq('blocker_id', currentUserId)
+        .eq('blocked_id', id)
+        .single();
+
+      setIsBlocked(!!data);
+    } catch (error) {
+      // If no block found, error is expected
+      setIsBlocked(false);
     }
   };
 
@@ -188,8 +236,29 @@ export default function UserProfile() {
   };
 
   const handleBlockSuccess = () => {
-    // Navigate back after blocking
-    router.back();
+    // Update block status and close modal
+    setIsBlocked(true);
+    setShowBlockModal(false);
+  };
+
+  const handleUnblock = async () => {
+    if (!currentUserId || !id) return;
+
+    try {
+      const { error } = await supabase
+        .from('user_blocks')
+        .delete()
+        .eq('blocker_id', currentUserId)
+        .eq('blocked_id', id);
+
+      if (!error) {
+        setIsBlocked(false);
+        // Refresh posts after unblocking
+        await fetchUserPosts();
+      }
+    } catch (error) {
+      console.error('Error unblocking user:', error);
+    }
   };
 
   const renderPost = ({ item }: { item: Post }) => (
@@ -221,6 +290,25 @@ export default function UserProfile() {
         <Ionicons name="grid-outline" size={60} color="#bbb" />
       </View>
       <Text style={styles.emptyStateText}>No posts yet</Text>
+    </View>
+  );
+
+  const renderBlockedState = () => (
+    <View style={styles.blockedStateContainer}>
+      <View style={styles.blockedIconContainer}>
+        <Ionicons name="ban-outline" size={60} color="#ff6b6b" />
+      </View>
+      <Text style={styles.blockedTitle}>User Blocked</Text>
+      <Text style={styles.blockedMessage}>
+        You have blocked this user. Their posts and comments will not be visible to you.
+      </Text>
+      <TouchableOpacity
+        style={styles.unblockButton}
+        onPress={handleUnblock}
+        activeOpacity={0.7}
+      >
+        <Text style={styles.unblockButtonText}>Unblock User</Text>
+      </TouchableOpacity>
     </View>
   );
 
@@ -273,104 +361,168 @@ export default function UserProfile() {
         <View style={{ width: 28 }} />
       </View>
 
-      <FlatList
-        data={posts}
-        renderItem={renderPost}
-        keyExtractor={(item) => item.id.toString()}
-        numColumns={3}
-        ListHeaderComponent={() => (
-          <>
-            {/* Profile Info */}
-            {avatarUrl ? (
-              <Image source={{ uri: avatarUrl }} style={styles.profileImage} />
-            ) : (
-              <View style={[styles.profileImage, styles.profileImagePlaceholder]}>
-                <Ionicons name="person-outline" size={40} color="#bbb" />
-              </View>
-            )}
-
-            <Text style={styles.username}>@{profile.username}</Text>
-            {profile.displayname && (
-              <Text style={styles.displayname}>{profile.displayname}</Text>
-            )}
-
-            {/* Bio */}
-            {profile.bio && (
-              <Text style={styles.bio}>{profile.bio}</Text>
-            )}
-
-            {/* Location */}
-            {profile.location && (
-              <View style={styles.locationContainer}>
-                <Ionicons name="location-outline" size={14} color="#666" />
-                <Text style={styles.locationText}>{profile.location}</Text>
-              </View>
-            )}
-
-            {/* Instagram Link */}
-            {profile.instagram_handle && (
-              <TouchableOpacity 
-                style={styles.socialLinkContainer}
-                onPress={() => openInstagram(profile.instagram_handle!)}
-                activeOpacity={0.7}
-              >
-                <Ionicons name="logo-instagram" size={16} color="#E4405F" />
-                <Text style={styles.socialLinkText}>@{profile.instagram_handle}</Text>
-              </TouchableOpacity>
-            )}
-
-            {/* Stats */}
-            <View style={styles.statsContainer}>
-              <TouchableOpacity 
-                style={styles.stats}
-                onPress={() => router.push(`/followers/${id}`)}
-                activeOpacity={0.7}
-              >
-                <Text style={styles.statNumber}>{profile.followers_count || 0}</Text>
-                <Text style={styles.statLabel}>Followers</Text>
-              </TouchableOpacity>
-              <TouchableOpacity 
-                style={styles.stats}
-                onPress={() => router.push(`/following/${id}`)}
-                activeOpacity={0.7}
-              >
-                <Text style={styles.statNumber}>{profile.following_count || 0}</Text>
-                <Text style={styles.statLabel}>Following</Text>
-              </TouchableOpacity>
-              <View style={styles.stats}>
-                <Text style={styles.statNumber}>{profile.likes_count || 0}</Text>
-                <Text style={styles.statLabel}>Likes</Text>
-              </View>
+      {isBlocked ? (
+        // Show blocked state instead of posts
+        <View style={styles.blockedProfileContainer}>
+          {/* Profile Info */}
+          {avatarUrl ? (
+            <Image source={{ uri: avatarUrl }} style={styles.profileImage} />
+          ) : (
+            <View style={[styles.profileImage, styles.profileImagePlaceholder]}>
+              <Ionicons name="person-outline" size={40} color="#bbb" />
             </View>
+          )}
 
-            {/* Follow and Block Buttons */}
-            {currentUserId && id !== currentUserId && (
-              <View style={styles.actionsContainer}>
-                <TouchableOpacity
-                  style={[styles.followButton, isFollowing && styles.followingButton]}
-                  onPress={handleFollowToggle}
+          <Text style={styles.username}>@{profile.username}</Text>
+          {profile.displayname && (
+            <Text style={styles.displayname}>{profile.displayname}</Text>
+          )}
+
+          {/* Bio */}
+          {profile.bio && (
+            <Text style={styles.bio}>{profile.bio}</Text>
+          )}
+
+          {/* Location */}
+          {profile.location && (
+            <View style={styles.locationContainer}>
+              <Ionicons name="location-outline" size={14} color="#666" />
+              <Text style={styles.locationText}>{profile.location}</Text>
+            </View>
+          )}
+
+          {/* Instagram Link */}
+          {profile.instagram_handle && (
+            <TouchableOpacity 
+              style={styles.socialLinkContainer}
+              onPress={() => openInstagram(profile.instagram_handle!)}
+              activeOpacity={0.7}
+            >
+              <Ionicons name="logo-instagram" size={16} color="#E4405F" />
+              <Text style={styles.socialLinkText}>@{profile.instagram_handle}</Text>
+            </TouchableOpacity>
+          )}
+
+          {/* Stats */}
+          <View style={styles.statsContainer}>
+            <View style={styles.stats}>
+              <Text style={styles.statNumber}>{profile.followers_count || 0}</Text>
+              <Text style={styles.statLabel}>Followers</Text>
+            </View>
+            <View style={styles.stats}>
+              <Text style={styles.statNumber}>{profile.following_count || 0}</Text>
+              <Text style={styles.statLabel}>Following</Text>
+            </View>
+            <View style={styles.stats}>
+              <Text style={styles.statNumber}>{profile.likes_count || 0}</Text>
+              <Text style={styles.statLabel}>Likes</Text>
+            </View>
+          </View>
+
+          {/* Blocked State */}
+          {renderBlockedState()}
+        </View>
+      ) : (
+        // Show normal profile with posts
+        <FlatList
+          data={posts}
+          renderItem={renderPost}
+          keyExtractor={(item) => item.id.toString()}
+          numColumns={3}
+          ListHeaderComponent={() => (
+            <>
+              {/* Profile Info */}
+              {avatarUrl ? (
+                <Image source={{ uri: avatarUrl }} style={styles.profileImage} />
+              ) : (
+                <View style={[styles.profileImage, styles.profileImagePlaceholder]}>
+                  <Ionicons name="person-outline" size={40} color="#bbb" />
+                </View>
+              )}
+
+              <Text style={styles.username}>@{profile.username}</Text>
+              {profile.displayname && (
+                <Text style={styles.displayname}>{profile.displayname}</Text>
+              )}
+
+              {/* Bio */}
+              {profile.bio && (
+                <Text style={styles.bio}>{profile.bio}</Text>
+              )}
+
+              {/* Location */}
+              {profile.location && (
+                <View style={styles.locationContainer}>
+                  <Ionicons name="location-outline" size={14} color="#666" />
+                  <Text style={styles.locationText}>{profile.location}</Text>
+                </View>
+              )}
+
+              {/* Instagram Link */}
+              {profile.instagram_handle && (
+                <TouchableOpacity 
+                  style={styles.socialLinkContainer}
+                  onPress={() => openInstagram(profile.instagram_handle!)}
                   activeOpacity={0.7}
                 >
-                  <Text style={[styles.followButtonText, isFollowing && styles.followingButtonText]}>
-                    {isFollowing ? 'Following' : 'Follow'}
-                  </Text>
+                  <Ionicons name="logo-instagram" size={16} color="#E4405F" />
+                  <Text style={styles.socialLinkText}>@{profile.instagram_handle}</Text>
                 </TouchableOpacity>
-                
-                <TouchableOpacity
-                  style={styles.blockButton}
-                  onPress={() => setShowBlockModal(true)}
+              )}
+
+              {/* Stats */}
+              <View style={styles.statsContainer}>
+                <TouchableOpacity 
+                  style={styles.stats}
+                  onPress={() => router.push(`/followers/${id}`)}
                   activeOpacity={0.7}
                 >
-                  <Ionicons name="ellipsis-horizontal" size={20} color="#666" />
+                  <Text style={styles.statNumber}>{profile.followers_count || 0}</Text>
+                  <Text style={styles.statLabel}>Followers</Text>
                 </TouchableOpacity>
+                <TouchableOpacity 
+                  style={styles.stats}
+                  onPress={() => router.push(`/following/${id}`)}
+                  activeOpacity={0.7}
+                >
+                  <Text style={styles.statNumber}>{profile.following_count || 0}</Text>
+                  <Text style={styles.statLabel}>Following</Text>
+                </TouchableOpacity>
+                <View style={styles.stats}>
+                  <Text style={styles.statNumber}>{profile.likes_count || 0}</Text>
+                  <Text style={styles.statLabel}>Likes</Text>
+                </View>
               </View>
-            )}
-          </>
-        )}
-        contentContainerStyle={styles.postsContainer}
-        ListEmptyComponent={renderEmptyState}
-        showsVerticalScrollIndicator={false}
-      />
+
+              {/* Follow and Block Buttons */}
+              {currentUserId && id !== currentUserId && (
+                <View style={styles.actionsContainer}>
+                  <TouchableOpacity
+                    style={[styles.followButton, isFollowing && styles.followingButton]}
+                    onPress={handleFollowToggle}
+                    activeOpacity={0.7}
+                  >
+                    <Text style={[styles.followButtonText, isFollowing && styles.followingButtonText]}>
+                      {isFollowing ? 'Following' : 'Follow'}
+                    </Text>
+                  </TouchableOpacity>
+                  
+                  <TouchableOpacity
+                    style={styles.blockButton}
+                    onPress={() => setShowBlockModal(true)}
+                    activeOpacity={0.7}
+                  >
+                    <Ionicons name="ellipsis-horizontal" size={20} color="#666" />
+                  </TouchableOpacity>
+                </View>
+              )}
+            </>
+          )}
+          contentContainerStyle={styles.postsContainer}
+          ListEmptyComponent={renderEmptyState}
+          showsVerticalScrollIndicator={false}
+        />
+      )}
 
       {/* Block User Modal */}
       {profile && (
@@ -577,6 +729,53 @@ const styles = StyleSheet.create({
     color: '#999',
     marginTop: 16,
     fontWeight: '500',
+  },
+  blockedStateContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingTop: 60,
+    paddingHorizontal: 40,
+  },
+  blockedIconContainer: {
+    width: 120,
+    height: 120,
+    borderRadius: 60,
+    backgroundColor: '#ffe6e6',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  blockedTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#ff6b6b',
+    marginBottom: 12,
+    textAlign: 'center',
+  },
+  blockedMessage: {
+    fontSize: 16,
+    color: '#666',
+    textAlign: 'center',
+    lineHeight: 22,
+    marginBottom: 30,
+  },
+  unblockButton: {
+    backgroundColor: '#0095f6',
+    paddingVertical: 12,
+    paddingHorizontal: 24,
+    borderRadius: 8,
+    minWidth: 140,
+    alignItems: 'center',
+  },
+  unblockButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  blockedProfileContainer: {
+    flex: 1,
+    paddingHorizontal: 0,
   },
 });
 

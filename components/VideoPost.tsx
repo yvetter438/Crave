@@ -741,7 +741,11 @@ useEffect(() => {
     
     if (isOwnPost) {
       // Show limited options for own post
-      Alert.alert('Post Options', 'More options coming soon!');
+      Alert.alert(
+        'Post Options', 
+        'You cannot block or report your own posts.',
+        [{ text: 'OK' }]
+      );
       return;
     }
     

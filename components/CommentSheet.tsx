@@ -144,20 +144,44 @@ export default function CommentSheet({ visible, onClose, postId, initialCommentC
     try {
       const { data: { user } } = await supabase.auth.getUser();
       
-      // Use the new moderation-aware RPC function that filters blocked users
+      // Use original comment fetching method (revert to working version)
       const { data, error } = await supabase
-        .rpc('get_comments_with_moderation', {
-          p_post_id: parseInt(postId),
-          p_user_id: user?.id || null
-        });
+        .from('comments')
+        .select(`
+          id,
+          post_id,
+          user_id,
+          parent_comment_id,
+          text,
+          created_at,
+          profiles!inner(username, displayname, avatar_url)
+        `)
+        .eq('post_id', postId)
+        .order('created_at', { ascending: true });
 
       if (error) {
         console.error('Error fetching comments:', error);
         return;
       }
 
+      // Transform data to match expected format
+      const transformedComments = data?.map(comment => ({
+        id: comment.id,
+        post_id: comment.post_id,
+        user_id: comment.user_id,
+        parent_comment_id: comment.parent_comment_id,
+        text: comment.text,
+        created_at: comment.created_at,
+        username: comment.profiles.username,
+        displayname: comment.profiles.displayname,
+        avatar_url: comment.profiles.avatar_url,
+        likes_count: 0,
+        replies_count: 0,
+        is_liked_by_user: false
+      })) || [];
+
       // Filter out replies - only show top-level comments
-      const topLevelComments = data?.filter((c: CommentData) => c.parent_comment_id === null) || [];
+      const topLevelComments = transformedComments.filter((c: CommentData) => c.parent_comment_id === null);
       setComments(topLevelComments);
     } catch (error) {
       console.error('Error fetching comments:', error);
