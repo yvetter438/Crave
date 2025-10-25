@@ -33,6 +33,7 @@ export default function Settings() {
   const [uploading, setUploading] = useState(false);
   const [hasChanges, setHasChanges] = useState(false);
   const [editorVisible, setEditorVisible] = useState(false);
+  const [isModerator, setIsModerator] = useState(false);
   const [currentField, setCurrentField] = useState<{
     name: string;
     title: string;
@@ -72,10 +73,30 @@ export default function Settings() {
         setInstagramHandle(profileData.instagram_handle || '');
         setAvatarUrl(profileData.avatar_url);
       }
+
+      // Check if user is a moderator
+      checkModeratorStatus(user.id);
     } catch (error) {
       console.error('Error fetching profile:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const checkModeratorStatus = async (userId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('moderators')
+        .select('user_id')
+        .eq('user_id', userId)
+        .single();
+
+      if (!error && data) {
+        setIsModerator(true);
+      }
+    } catch (error) {
+      // Not a moderator or error occurred
+      setIsModerator(false);
     }
   };
 
@@ -568,6 +589,17 @@ export default function Settings() {
 
         {/* Account Actions */}
         <View style={styles.actionsSection}>
+          {/* Moderator Dashboard - Only show for moderators */}
+          {isModerator && (
+            <TouchableOpacity 
+              style={[styles.actionButton, styles.moderatorButton]} 
+              onPress={() => router.push('/moderator')}
+            >
+              <Ionicons name="shield-checkmark" size={20} color="#007AFF" style={styles.moderatorIcon} />
+              <Text style={[styles.actionButtonText, styles.moderatorButtonText]}>Moderator Dashboard</Text>
+            </TouchableOpacity>
+          )}
+          
           <TouchableOpacity style={styles.actionButton} onPress={handleLogout}>
             <Text style={styles.actionButtonText}>Log Out</Text>
           </TouchableOpacity>
@@ -714,6 +746,21 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#0095f6',
     fontWeight: '500',
+  },
+  moderatorButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#f0f8ff',
+    borderRadius: 8,
+    marginBottom: 12,
+    borderBottomWidth: 0,
+  },
+  moderatorIcon: {
+    marginRight: 8,
+  },
+  moderatorButtonText: {
+    color: '#007AFF',
+    fontWeight: '600',
   },
   deleteButtonText: {
     color: '#ed4956',

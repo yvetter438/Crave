@@ -21,76 +21,87 @@ This guide will help you configure Supabase Storage buckets for user-generated v
    - **File size limit**: 100 MB (or your preferred limit)
    - **Allowed MIME types**: `video/*` (accepts all video formats - recommended for mobile compatibility)
 
-### 2. Storage Policies for Videos Bucket
+### 2. Storage Policies for Both Buckets
 
-After creating the bucket, go to **Storage > Policies** and add these policies:
+**⚠️ IMPORTANT**: Run the SQL file `supabase_storage_policies_fix.sql` to set up all policies at once.
 
-#### Policy 1: Users can upload their own videos
+Or manually add these policies in **Storage > Policies**:
+
+#### Videos Bucket Policies (Private - Pending Content)
+
+**Policy 1: Users can upload to their own folder**
 ```sql
 CREATE POLICY "Users can upload own videos"
 ON storage.objects FOR INSERT
 TO authenticated
 WITH CHECK (
-  bucket_id = 'videos' 
-  AND auth.uid()::text = (storage.foldername(name))[1]
+  bucket_id = 'videos'
+  AND (storage.foldername(name))[1] = auth.uid()::text
 );
 ```
 
-**Explanation**: Videos are uploaded to paths like `{user_id}/{filename}`. This policy ensures users can only upload to their own folder.
-
-#### Policy 2: Users can read their own videos
+**Policy 2: Users can read their own videos**
 ```sql
-CREATE POLICY "Users can view own videos"
+CREATE POLICY "Users can read own videos"
 ON storage.objects FOR SELECT
 TO authenticated
 USING (
   bucket_id = 'videos'
-  AND auth.uid()::text = (storage.foldername(name))[1]
+  AND (storage.foldername(name))[1] = auth.uid()::text
 );
 ```
 
-**Explanation**: Authors can view their uploaded videos even if the post is still pending moderation.
-
-#### Policy 3: Public can read videos of approved posts
+**Policy 3: Moderators can read all videos (for review)**
 ```sql
-CREATE POLICY "Public can view approved videos"
+CREATE POLICY "Moderators can read all videos"
 ON storage.objects FOR SELECT
-TO public
-USING (
-  bucket_id = 'videos'
-  AND EXISTS (
-    SELECT 1 FROM posts
-    WHERE posts.video_url = storage.objects.name
-    AND posts.status = 'approved'
-  )
-);
-```
-
-**Explanation**: Videos are only publicly accessible if the associated post has been approved.
-
-#### Policy 4: Users can update their own pending videos
-```sql
-CREATE POLICY "Users can update own videos"
-ON storage.objects FOR UPDATE
 TO authenticated
 USING (
   bucket_id = 'videos'
-  AND auth.uid()::text = (storage.foldername(name))[1]
-)
-WITH CHECK (
-  bucket_id = 'videos'
-  AND auth.uid()::text = (storage.foldername(name))[1]
+  AND is_moderator(auth.uid())
 );
 ```
 
-#### Policy 5: Users can delete their own videos
+**Policy 4: Moderators can delete videos (cleanup)**
 ```sql
-CREATE POLICY "Users can delete own videos"
+CREATE POLICY "Moderators can delete videos"
 ON storage.objects FOR DELETE
 TO authenticated
 USING (
   bucket_id = 'videos'
-  AND auth.uid()::text = (storage.foldername(name))[1]
+  AND is_moderator(auth.uid())
+);
+```
+
+#### Posts-Videos Bucket Policies (Public - Approved Content)
+
+**Policy 1: Everyone can view approved videos**
+```sql
+CREATE POLICY "Public can view approved videos"
+ON storage.objects FOR SELECT
+TO public
+USING (bucket_id = 'posts-videos');
+```
+
+**Policy 2: Moderators can upload approved videos**
+```sql
+CREATE POLICY "Moderators can upload approved videos"
+ON storage.objects FOR INSERT
+TO authenticated
+WITH CHECK (
+  bucket_id = 'posts-videos' 
+  AND is_moderator(auth.uid())
+);
+```
+
+**Policy 3: Moderators can delete approved videos**
+```sql
+CREATE POLICY "Moderators can delete approved videos"
+ON storage.objects FOR DELETE
+TO authenticated
+USING (
+  bucket_id = 'posts-videos' 
+  AND is_moderator(auth.uid())
 );
 ```
 

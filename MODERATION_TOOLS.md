@@ -1,24 +1,61 @@
-# Moderation Tools & SQL Queries
+# Moderation Tools & Manual Content Review
 
-This document contains SQL queries and procedures for moderating user-generated content in Crave.
+This document contains tools and SQL queries for moderating user-generated content in Crave.
 
-## Quick Start
+## 🎯 Recommended: Use the In-App Moderator Dashboard
 
-### 1. Add Your First Moderator
+### Access the Moderator Screen
 
-Run this in Supabase SQL Editor (replace with your user ID):
+1. Navigate to `/moderator` in your app (you can add a button in Settings or use deep linking)
+2. The screen will show all pending posts with video previews
+3. Review each post and click **Approve** or **Reject**
+4. Approval automatically:
+   - Moves video from private `videos` bucket to public `posts-videos` bucket
+   - Updates post status to `approved`
+   - Makes content visible to all users
+   - Cleans up the private bucket
+
+### First Time Setup
+
+Run this in Supabase SQL Editor to add yourself as a moderator:
 
 ```sql
--- Add yourself as a moderator
-INSERT INTO moderators (user_id, granted_by)
-VALUES ('YOUR-USER-ID-HERE', 'YOUR-USER-ID-HERE')
-ON CONFLICT (user_id) DO NOTHING;
-```
-
-To find your user ID:
-```sql
+-- Step 1: Find your user ID
 SELECT id, email FROM auth.users WHERE email = 'your-email@example.com';
+
+-- Step 2: Add yourself as a moderator (replace YOUR_USER_ID)
+INSERT INTO moderators (user_id, granted_by)
+VALUES ('YOUR_USER_ID', 'YOUR_USER_ID')
+ON CONFLICT (user_id) DO NOTHING;
+
+-- Step 3: Run the moderator columns migration
+-- See: supabase_add_moderator_columns.sql
 ```
+
+## 📱 In-App Moderation Workflow
+
+**Recommended for day-to-day moderation:**
+
+1. Open the Moderator Dashboard (`/moderator`)
+2. Review pending posts (video plays automatically)
+3. Click **Approve** to:
+   - Move video to public bucket
+   - Make post visible to everyone
+   - Update status to `approved`
+4. Click **Reject** to:
+   - Remove post from feed
+   - Keep video in private bucket (for audit)
+   - Require a rejection reason
+
+**Benefits:**
+- Visual review with video playback
+- One-click approval/rejection
+- Automatic video bucket management
+- Mobile-friendly (can moderate from your phone!)
+
+---
+
+## 🛠️ Alternative: SQL Queries for Advanced Users
 
 ## Content Moderation Queries
 
