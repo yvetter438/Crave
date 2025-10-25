@@ -564,6 +564,24 @@ useEffect(() => {
     }
   }
 
+  const handleProfilePress = () => {
+    if (profile?.user_id && profile?.username) {
+      // Add haptic feedback for better UX
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      
+      // Navigate to user profile page
+      router.push(`/user/${profile.user_id}`);
+    } else {
+      // Handle case where profile is not available (anonymous user)
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      Alert.alert(
+        'Profile Unavailable', 
+        'This user\'s profile is not available.',
+        [{ text: 'OK' }]
+      );
+    }
+  }
+
   const onSharePress = async () => {
     try {
       // Pause video before sharing
@@ -868,19 +886,33 @@ useEffect(() => {
               </TouchableOpacity>
             )}
             
-            {/* Profile picture */}
-            {avatarUrl ? (
-              <Image source={{ uri: avatarUrl }} style={styles.profilePicture} />
-            ) : (
-              <View style={styles.profilePicture}>
-                <Ionicons name="person" size={16} color="rgba(255, 255, 255, 0.7)" />
-              </View>
-            )}
+            {/* Profile picture - Clickable */}
+            <TouchableOpacity 
+              onPress={() => handleProfilePress()}
+              activeOpacity={0.7}
+              pointerEvents="auto"
+              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+            >
+              {avatarUrl ? (
+                <Image source={{ uri: avatarUrl }} style={styles.profilePicture} />
+              ) : (
+                <View style={styles.profilePicture}>
+                  <Ionicons name="person" size={16} color="rgba(255, 255, 255, 0.7)" />
+                </View>
+              )}
+            </TouchableOpacity>
             
-            {/* Username */}
-            <Text style={styles.username}>
-              {profile?.username ? `@${profile.username}` : '@anonymous'}
-            </Text>
+            {/* Username - Clickable */}
+            <TouchableOpacity 
+              onPress={() => handleProfilePress()}
+              activeOpacity={0.7}
+              pointerEvents="auto"
+              hitSlop={{ top: 4, bottom: 4, left: 4, right: 4 }}
+            >
+              <Text style={styles.username}>
+                {profile?.username ? `@${profile.username}` : '@anonymous'}
+              </Text>
+            </TouchableOpacity>
             
             {/* Description */}
             <Text style={styles.caption}>{post.description}</Text>
@@ -1028,10 +1060,15 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     backgroundColor: 'rgba(255, 255, 255, 0.3)',
     marginBottom: 8,
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.5)',
+    borderWidth: 2,
+    borderColor: 'rgba(255, 255, 255, 0.8)',
     justifyContent: 'center',
     alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 3,
+    elevation: 3,
   },
   username: {
     color: 'white',
@@ -1039,6 +1076,9 @@ const styles = StyleSheet.create({
     fontFamily: 'Inter',
     fontWeight: 'bold',
     marginBottom: 6,
+    textShadowColor: 'rgba(0, 0, 0, 0.5)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 2,
   },
 
   overlay: {

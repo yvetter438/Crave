@@ -41,8 +41,8 @@ export default function CommentReplies({ commentId, currentUserId, onReply, pare
   const fetchReplies = async () => {
     setIsLoading(true);
     try {
-      // Use original reply fetching method (revert to working version)
-      const { data, error } = await supabase
+      // Use separate queries to avoid foreign key relationship issues (same as CommentSheet)
+      const { data: repliesData, error: repliesError } = await supabase
         .from('comments')
         .select(`
           id,
@@ -51,31 +51,55 @@ export default function CommentReplies({ commentId, currentUserId, onReply, pare
           parent_comment_id,
           text,
           created_at,
-          profiles!inner(username, displayname, avatar_url)
+          status
         `)
         .eq('parent_comment_id', commentId)
+        .eq('status', 'visible')
         .order('created_at', { ascending: true });
 
-      if (error) {
-        console.error('Error fetching replies:', error);
+      if (repliesError) {
+        console.error('Error fetching replies:', repliesError);
         return;
       }
 
+      // Get unique user IDs from replies
+      const userIds = [...new Set(repliesData?.map(c => c.user_id) || [])];
+      
+      // Fetch profiles for all users
+      const { data: profilesData, error: profilesError } = await supabase
+        .from('profiles')
+        .select('user_id, username, displayname, avatar_url')
+        .in('user_id', userIds);
+
+      if (profilesError) {
+        console.error('Error fetching profiles:', profilesError);
+        return;
+      }
+
+      // Create a map of user_id to profile data
+      const profilesMap = new Map();
+      profilesData?.forEach(profile => {
+        profilesMap.set(profile.user_id, profile);
+      });
+
       // Transform data to match expected format
-      const transformedReplies = data?.map(comment => ({
-        id: comment.id,
-        post_id: comment.post_id,
-        user_id: comment.user_id,
-        parent_comment_id: comment.parent_comment_id,
-        text: comment.text,
-        created_at: comment.created_at,
-        username: comment.profiles.username,
-        displayname: comment.profiles.displayname,
-        avatar_url: comment.profiles.avatar_url,
-        likes_count: 0,
-        replies_count: 0,
-        is_liked_by_user: false
-      })) || [];
+      const transformedReplies = repliesData?.map(comment => {
+        const profile = profilesMap.get(comment.user_id) || { username: 'anonymous', displayname: null, avatar_url: null };
+        return {
+          id: comment.id,
+          post_id: comment.post_id,
+          user_id: comment.user_id,
+          parent_comment_id: comment.parent_comment_id,
+          text: comment.text,
+          created_at: comment.created_at,
+          username: profile.username,
+          displayname: profile.displayname,
+          avatar_url: profile.avatar_url,
+          likes_count: 0,
+          replies_count: 0,
+          is_liked_by_user: false
+        };
+      }) || [];
 
       setReplies(transformedReplies);
     } catch (error) {

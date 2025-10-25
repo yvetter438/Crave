@@ -185,6 +185,24 @@ export default function CommentSheet({ visible, onClose, postId, initialCommentC
         profilesMap.set(profile.user_id, profile);
       });
 
+      // Get reply counts for top-level comments
+      const topLevelCommentIds = commentsData?.filter(c => c.parent_comment_id === null).map(c => c.id) || [];
+      
+      let replyCounts = new Map();
+      if (topLevelCommentIds.length > 0) {
+        const { data: replyCountData } = await supabase
+          .from('comments')
+          .select('parent_comment_id')
+          .in('parent_comment_id', topLevelCommentIds)
+          .eq('status', 'visible');
+        
+        // Count replies for each parent comment
+        replyCountData?.forEach(reply => {
+          const parentId = reply.parent_comment_id;
+          replyCounts.set(parentId, (replyCounts.get(parentId) || 0) + 1);
+        });
+      }
+
       // Transform data to match expected format
       const transformedComments = commentsData?.map(comment => {
         const profile = profilesMap.get(comment.user_id) || { username: 'anonymous', displayname: null, avatar_url: null };
@@ -199,7 +217,7 @@ export default function CommentSheet({ visible, onClose, postId, initialCommentC
           displayname: profile.displayname,
           avatar_url: profile.avatar_url,
           likes_count: 0,
-          replies_count: 0,
+          replies_count: replyCounts.get(comment.id) || 0,
           is_liked_by_user: false
         };
       }) || [];
