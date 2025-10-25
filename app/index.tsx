@@ -64,9 +64,6 @@ export default function Index() {
   }
 
 
-  const guestLoginHandler = () => {
-    router.push('./(tabs)');
-  };
 
 
   const loginHandler = () => {
@@ -236,10 +233,6 @@ export default function Index() {
               {!showRegistrationOptions && !showLoginOptions ? (
                 <>
                   <View style={styles.buttonContainer}>
-                    <Pressable style={[styles.button, styles.guestButton]} onPress={guestLoginHandler}>
-                      <Text style={[styles.buttonText, styles.guestButtonText]}>BROWSE AS GUEST</Text>
-                    </Pressable>
-                    
                     <Pressable style={styles.button} onPress={loginHandler}>
                       <Text style={styles.buttonText}>LOG IN</Text>
                     </Pressable>
@@ -421,13 +414,6 @@ const styles = StyleSheet.create({
     width: '100%',
     justifyContent: 'center',
     alignItems: 'center',
-  },
-  guestButtonText: {
-    color: Colors.text,
-  },
-  guestButton: {
-    backgroundColor: Colors.background,
-    borderColor: Colors.border,
   },
   registrationTitle: {
     fontSize: 24,
