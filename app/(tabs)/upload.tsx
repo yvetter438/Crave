@@ -16,6 +16,7 @@ import {
 import { useState, useEffect } from 'react';
 import * as ImagePicker from 'expo-image-picker';
 import * as FileSystem from 'expo-file-system/legacy';
+import * as VideoThumbnails from 'expo-video-thumbnails';
 import { VideoView, useVideoPlayer } from 'expo-video';
 import { supabase } from '../../lib/supabase';
 import { router } from 'expo-router';
@@ -140,33 +141,46 @@ export default function UploadScreen() {
         return;
       }
 
-      // Launch video picker
+      // Launch video picker with built-in compression
       const result = await ImagePicker.launchImageLibraryAsync({
         mediaTypes: ['videos'],
         allowsEditing: true,
-        quality: 1,
         videoMaxDuration: 180, // 3 minutes max
+        videoQuality: ImagePicker.UIImagePickerControllerQualityType.Medium, // Built-in compression
+        videoExportPreset: ImagePicker.VideoExportPreset.MediumQuality, // H.264 compression
       });
 
       if (!result.canceled && result.assets[0]) {
         const asset = result.assets[0];
         
-        // Check file size (limit to 100MB)
+        // Check file size (limit to 50MB after compression)
         const fileInfo = await FileSystem.getInfoAsync(asset.uri);
         if (fileInfo.exists && fileInfo.size) {
           const sizeMB = fileInfo.size / (1024 * 1024);
-          if (sizeMB > 100) {
+          if (sizeMB > 50) {
             Alert.alert(
               'File Too Large',
-              `Video size is ${sizeMB.toFixed(1)}MB. Please select a video under 100MB.`,
+              `Video size is ${sizeMB.toFixed(1)}MB. Please select a video under 50MB or try a shorter video.`,
               [{ text: 'OK' }]
             );
             return;
           }
         }
 
+        console.log('🎥 Video selected with built-in compression...');
+        
+        // Log the compressed video info (ImagePicker already applied compression)
+        await logVideoInfo(asset.uri, 'Compressed');
+        
+        console.log('🗜️ Video compressed using Expo ImagePicker built-in compression:');
+        console.log('   • Quality: Medium (UIImagePickerControllerQualityType.Medium)');
+        console.log('   • Export Preset: MediumQuality (H.264 compression)');
+        console.log('   • Max Duration: 180 seconds');
+        
         setVideoUri(asset.uri);
         setVideoFileName(asset.uri.split('/').pop() || 'video.mp4');
+        
+        console.log('✅ Video processing complete, advancing to details screen');
         
         // Automatically advance to details screen
         setCurrentStep('details');
@@ -322,6 +336,23 @@ export default function UploadScreen() {
     setCurrentStep('select');
   };
 
+  const logVideoInfo = async (videoUri: string, label: string): Promise<void> => {
+    try {
+      const fileInfo = await FileSystem.getInfoAsync(videoUri);
+      const sizeMB = fileInfo.exists && fileInfo.size ? 
+        (fileInfo.size / (1024 * 1024)).toFixed(2) : 'unknown';
+      
+      console.log(`📊 ${label} video size: ${sizeMB}MB`);
+      console.log(`📍 ${label} video path: ${videoUri}`);
+      
+      if (fileInfo.exists && fileInfo.size) {
+        console.log(`📏 File size in bytes: ${fileInfo.size}`);
+      }
+    } catch (error) {
+      console.error(`❌ Error getting ${label.toLowerCase()} video info:`, error);
+    }
+  };
+
   const renderVideoSelectionScreen = () => (
     <View style={styles.selectionScreen}>
       <View style={styles.selectionHeader}>
@@ -338,8 +369,8 @@ export default function UploadScreen() {
           <Text style={styles.videoSelectorSubtitle}>Choose from your camera roll</Text>
           <View style={styles.videoRequirements}>
             <Text style={styles.requirementText}>• Maximum 3 minutes</Text>
-            <Text style={styles.requirementText}>• Up to 100MB file size</Text>
-            <Text style={styles.requirementText}>• MP4 format recommended</Text>
+            <Text style={styles.requirementText}>• Up to 50MB file size</Text>
+            <Text style={styles.requirementText}>• Automatically optimized</Text>
           </View>
         </Pressable>
       </View>
