@@ -55,6 +55,9 @@ function VideoPreview({ videoUri, onChangeVideo }: { videoUri: string; onChangeV
 }
 
 export default function UploadScreen() {
+  // Upload flow state
+  const [currentStep, setCurrentStep] = useState<'select' | 'details'>('select');
+  
   // Video state
   const [videoUri, setVideoUri] = useState<string | null>(null);
   const [videoFileName, setVideoFileName] = useState<string>('');
@@ -164,6 +167,9 @@ export default function UploadScreen() {
 
         setVideoUri(asset.uri);
         setVideoFileName(asset.uri.split('/').pop() || 'video.mp4');
+        
+        // Automatically advance to details screen
+        setCurrentStep('details');
       }
     } catch (error) {
       console.error('Error picking video:', error);
@@ -303,7 +309,188 @@ export default function UploadScreen() {
     setLocation('');
     setSelectedRestaurant(null);
     setUploadProgress(0);
+    setCurrentStep('select');
   };
+
+  const goBackToSelection = () => {
+    setCurrentStep('select');
+  };
+
+  const changeVideo = () => {
+    setVideoUri(null);
+    setVideoFileName('');
+    setCurrentStep('select');
+  };
+
+  const renderVideoSelectionScreen = () => (
+    <View style={styles.selectionScreen}>
+      <View style={styles.selectionHeader}>
+        <Text style={styles.selectionTitle}>Upload Video</Text>
+        <Text style={styles.selectionSubtitle}>Share your food experience with the world</Text>
+      </View>
+
+      <View style={styles.selectionContent}>
+        <Pressable style={styles.videoSelector} onPress={pickVideo}>
+          <View style={styles.videoSelectorIcon}>
+            <Ionicons name="videocam" size={64} color="#FF6B6B" />
+          </View>
+          <Text style={styles.videoSelectorTitle}>Tap to Select Video</Text>
+          <Text style={styles.videoSelectorSubtitle}>Choose from your camera roll</Text>
+          <View style={styles.videoRequirements}>
+            <Text style={styles.requirementText}>• Maximum 3 minutes</Text>
+            <Text style={styles.requirementText}>• Up to 100MB file size</Text>
+            <Text style={styles.requirementText}>• MP4 format recommended</Text>
+          </View>
+        </Pressable>
+      </View>
+
+      <View style={styles.selectionFooter}>
+        <View style={styles.moderationNotice}>
+          <Ionicons name="shield-checkmark" size={20} color="#FF6B6B" />
+          <Text style={styles.moderationText}>
+            All videos are reviewed before going live to ensure quality content
+          </Text>
+        </View>
+      </View>
+    </View>
+  );
+
+  const renderVideoDetailsScreen = () => (
+    <View style={styles.detailsScreen}>
+      <View style={styles.detailsHeader}>
+        <TouchableOpacity style={styles.backButton} onPress={goBackToSelection}>
+          <Ionicons name="arrow-back" size={24} color="#333" />
+        </TouchableOpacity>
+        <Text style={styles.detailsTitle}>Video Details</Text>
+        <View style={styles.headerSpacer} />
+      </View>
+
+      <ScrollView 
+        contentContainerStyle={styles.detailsContent}
+        keyboardShouldPersistTaps="handled"
+      >
+        {/* Video Preview */}
+        {videoUri && (
+          <View style={styles.compactVideoPreview}>
+            <VideoPreview videoUri={videoUri} onChangeVideo={changeVideo} />
+          </View>
+        )}
+
+        {/* Form Fields */}
+        <View style={styles.formContainer}>
+          {/* Description */}
+          <View style={styles.inputGroup}>
+            <Text style={styles.label}>
+              Description <Text style={styles.required}>*</Text>
+            </Text>
+            <TextInput
+              style={[styles.textInput, styles.textArea]}
+              placeholder="Tell us about this dish..."
+              placeholderTextColor="#999"
+              value={description}
+              onChangeText={setDescription}
+              multiline
+              numberOfLines={4}
+              maxLength={500}
+            />
+            <Text style={styles.characterCount}>{description.length}/500</Text>
+          </View>
+
+          {/* Restaurant */}
+          <View style={styles.inputGroup}>
+            <Text style={styles.label}>Restaurant</Text>
+            <Pressable 
+              style={styles.selectButton}
+              onPress={() => setShowRestaurantModal(true)}
+            >
+              <Ionicons name="restaurant" size={20} color="#666" />
+              <Text style={[
+                styles.selectButtonText,
+                selectedRestaurant && styles.selectButtonTextSelected
+              ]}>
+                {selectedRestaurant ? selectedRestaurant.name : 'Select restaurant (optional)'}
+              </Text>
+              <Ionicons name="chevron-forward" size={20} color="#999" />
+            </Pressable>
+            {selectedRestaurant && (
+              <View style={styles.selectedRestaurant}>
+                <Text style={styles.selectedRestaurantCuisine}>
+                  {selectedRestaurant.cuisine}
+                </Text>
+                <Pressable 
+                  onPress={() => setSelectedRestaurant(null)}
+                  hitSlop={8}
+                >
+                  <Ionicons name="close-circle" size={20} color="#999" />
+                </Pressable>
+              </View>
+            )}
+          </View>
+
+          {/* Location */}
+          <View style={styles.inputGroup}>
+            <Text style={styles.label}>Location</Text>
+            <View style={styles.inputWithIcon}>
+              <Ionicons name="location" size={20} color="#666" />
+              <TextInput
+                style={styles.textInputWithIcon}
+                placeholder="City or neighborhood (optional)"
+                placeholderTextColor="#999"
+                value={location}
+                onChangeText={setLocation}
+                maxLength={100}
+              />
+            </View>
+          </View>
+
+          {/* Tags */}
+          <View style={styles.inputGroup}>
+            <Text style={styles.label}>Tags</Text>
+            <View style={styles.inputWithIcon}>
+              <Ionicons name="pricetag" size={20} color="#666" />
+              <TextInput
+                style={styles.textInputWithIcon}
+                placeholder="e.g., spicy, vegetarian, dessert (optional)"
+                placeholderTextColor="#999"
+                value={tags}
+                onChangeText={setTags}
+                maxLength={100}
+              />
+            </View>
+            <Text style={styles.helperText}>Separate tags with commas</Text>
+          </View>
+        </View>
+
+        {/* Upload Progress */}
+        {uploading && (
+          <View style={styles.progressContainer}>
+            <View style={styles.progressBar}>
+              <View style={[styles.progressFill, { width: `${uploadProgress}%` }]} />
+            </View>
+            <Text style={styles.progressText}>Uploading... {uploadProgress}%</Text>
+          </View>
+        )}
+
+        {/* Upload Button */}
+        <Pressable
+          style={[styles.uploadButton, (!description.trim() || uploading) && styles.uploadButtonDisabled]}
+          onPress={uploadVideo}
+          disabled={!description.trim() || uploading}
+        >
+          {uploading ? (
+            <ActivityIndicator color="#fff" />
+          ) : (
+            <>
+              <Ionicons name="cloud-upload" size={24} color="#fff" />
+              <Text style={styles.uploadButtonText}>
+                {description.trim() ? 'Upload Video' : 'Add Description First'}
+              </Text>
+            </>
+          )}
+        </Pressable>
+      </ScrollView>
+    </View>
+  );
 
   const renderRestaurantModal = () => (
     <Modal
@@ -375,151 +562,7 @@ export default function UploadScreen() {
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={styles.keyboardAvoid}
       >
-        <ScrollView 
-          contentContainerStyle={styles.scrollContent}
-          keyboardShouldPersistTaps="handled"
-        >
-          {/* Header */}
-          <View style={styles.header}>
-            <Text style={styles.headerTitle}>Upload Video</Text>
-            <Text style={styles.headerSubtitle}>Share your food experience</Text>
-          </View>
-
-          {/* Video Preview */}
-          <View style={styles.videoContainer}>
-            {videoUri ? (
-              <VideoPreview videoUri={videoUri} onChangeVideo={pickVideo} />
-            ) : (
-              <Pressable style={styles.uploadPlaceholder} onPress={pickVideo}>
-                <Ionicons name="videocam" size={48} color="#999" />
-                <Text style={styles.uploadPlaceholderText}>Tap to select video</Text>
-                <Text style={styles.uploadPlaceholderSubtext}>Max 3 min, 100MB</Text>
-              </Pressable>
-            )}
-          </View>
-
-          {/* Form Fields */}
-          <View style={styles.formContainer}>
-            {/* Description */}
-            <View style={styles.inputGroup}>
-              <Text style={styles.label}>
-                Description <Text style={styles.required}>*</Text>
-              </Text>
-              <TextInput
-                style={[styles.textInput, styles.textArea]}
-                placeholder="Tell us about this dish..."
-                placeholderTextColor="#999"
-                value={description}
-                onChangeText={setDescription}
-                multiline
-                numberOfLines={4}
-                maxLength={500}
-              />
-              <Text style={styles.characterCount}>{description.length}/500</Text>
-            </View>
-
-            {/* Restaurant */}
-            <View style={styles.inputGroup}>
-              <Text style={styles.label}>Restaurant</Text>
-              <Pressable 
-                style={styles.selectButton}
-                onPress={() => setShowRestaurantModal(true)}
-              >
-                <Ionicons name="restaurant" size={20} color="#666" />
-                <Text style={[
-                  styles.selectButtonText,
-                  selectedRestaurant && styles.selectButtonTextSelected
-                ]}>
-                  {selectedRestaurant ? selectedRestaurant.name : 'Select restaurant (optional)'}
-                </Text>
-                <Ionicons name="chevron-forward" size={20} color="#999" />
-              </Pressable>
-              {selectedRestaurant && (
-                <View style={styles.selectedRestaurant}>
-                  <Text style={styles.selectedRestaurantCuisine}>
-                    {selectedRestaurant.cuisine}
-                  </Text>
-                  <Pressable 
-                    onPress={() => setSelectedRestaurant(null)}
-                    hitSlop={8}
-                  >
-                    <Ionicons name="close-circle" size={20} color="#999" />
-                  </Pressable>
-                </View>
-              )}
-            </View>
-
-            {/* Location */}
-            <View style={styles.inputGroup}>
-              <Text style={styles.label}>Location</Text>
-              <View style={styles.inputWithIcon}>
-                <Ionicons name="location" size={20} color="#666" />
-                <TextInput
-                  style={styles.textInputWithIcon}
-                  placeholder="City or neighborhood (optional)"
-                  placeholderTextColor="#999"
-                  value={location}
-                  onChangeText={setLocation}
-                  maxLength={100}
-                />
-              </View>
-            </View>
-
-            {/* Tags */}
-            <View style={styles.inputGroup}>
-              <Text style={styles.label}>Tags</Text>
-              <View style={styles.inputWithIcon}>
-                <Ionicons name="pricetag" size={20} color="#666" />
-                <TextInput
-                  style={styles.textInputWithIcon}
-                  placeholder="e.g., spicy, vegetarian, dessert (optional)"
-                  placeholderTextColor="#999"
-                  value={tags}
-                  onChangeText={setTags}
-                  maxLength={100}
-                />
-              </View>
-              <Text style={styles.helperText}>Separate tags with commas</Text>
-            </View>
-          </View>
-
-          {/* Upload Progress */}
-          {uploading && (
-            <View style={styles.progressContainer}>
-              <View style={styles.progressBar}>
-                <View style={[styles.progressFill, { width: `${uploadProgress}%` }]} />
-              </View>
-              <Text style={styles.progressText}>Uploading... {uploadProgress}%</Text>
-            </View>
-          )}
-
-          {/* Moderation Notice */}
-          <View style={styles.noticeContainer}>
-            <Ionicons name="information-circle" size={20} color="#FF6B6B" />
-            <Text style={styles.noticeText}>
-              Your video will be reviewed before appearing in the public feed. 
-              You can view it on your profile while it's pending approval.
-            </Text>
-          </View>
-
-          {/* Upload Button */}
-          <Pressable
-            style={[styles.uploadButton, (!videoUri || uploading) && styles.uploadButtonDisabled]}
-            onPress={uploadVideo}
-            disabled={!videoUri || uploading}
-          >
-            {uploading ? (
-              <ActivityIndicator color="#fff" />
-            ) : (
-              <>
-                <Ionicons name="cloud-upload" size={24} color="#fff" />
-                <Text style={styles.uploadButtonText}>
-                  {videoUri ? 'Upload Video' : 'Select Video First'}
-                </Text>
-              </>
-            )}
-          </Pressable>
-        </ScrollView>
+        {currentStep === 'select' ? renderVideoSelectionScreen() : renderVideoDetailsScreen()}
       </KeyboardAvoidingView>
 
       {renderRestaurantModal()}
@@ -534,6 +577,131 @@ const styles = StyleSheet.create({
   },
   keyboardAvoid: {
     flex: 1,
+  },
+  // Video Selection Screen
+  selectionScreen: {
+    flex: 1,
+    justifyContent: 'space-between',
+  },
+  selectionHeader: {
+    alignItems: 'center',
+    paddingTop: 40,
+    paddingHorizontal: 20,
+  },
+  selectionTitle: {
+    fontSize: 32,
+    fontWeight: 'bold',
+    color: '#333',
+    marginBottom: 8,
+  },
+  selectionSubtitle: {
+    fontSize: 16,
+    color: '#666',
+    textAlign: 'center',
+  },
+  selectionContent: {
+    flex: 1,
+    justifyContent: 'center',
+    paddingHorizontal: 20,
+  },
+  videoSelector: {
+    backgroundColor: '#f8f9fa',
+    borderRadius: 20,
+    padding: 40,
+    alignItems: 'center',
+    borderWidth: 2,
+    borderColor: '#e9ecef',
+    borderStyle: 'dashed',
+  },
+  videoSelectorIcon: {
+    width: 120,
+    height: 120,
+    borderRadius: 60,
+    backgroundColor: '#fff',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 24,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  videoSelectorTitle: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#333',
+    marginBottom: 8,
+  },
+  videoSelectorSubtitle: {
+    fontSize: 16,
+    color: '#666',
+    marginBottom: 24,
+  },
+  videoRequirements: {
+    alignItems: 'center',
+  },
+  requirementText: {
+    fontSize: 14,
+    color: '#666',
+    marginBottom: 4,
+  },
+  selectionFooter: {
+    paddingHorizontal: 20,
+    paddingBottom: 20,
+  },
+  moderationNotice: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#fff5f5',
+    padding: 16,
+    borderRadius: 12,
+    borderLeftWidth: 4,
+    borderLeftColor: '#FF6B6B',
+  },
+  moderationText: {
+    flex: 1,
+    fontSize: 14,
+    color: '#666',
+    marginLeft: 12,
+    lineHeight: 20,
+  },
+  // Video Details Screen
+  detailsScreen: {
+    flex: 1,
+  },
+  detailsHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#e9ecef',
+  },
+  backButton: {
+    padding: 8,
+    borderRadius: 20,
+    backgroundColor: '#f8f9fa',
+  },
+  detailsTitle: {
+    flex: 1,
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#333',
+    textAlign: 'center',
+  },
+  headerSpacer: {
+    width: 40,
+  },
+  detailsContent: {
+    padding: 20,
+    paddingBottom: 40,
+  },
+  compactVideoPreview: {
+    height: 200,
+    borderRadius: 12,
+    overflow: 'hidden',
+    marginBottom: 24,
   },
   scrollContent: {
     padding: 20,

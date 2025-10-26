@@ -14,6 +14,7 @@ interface Post {
   description: string;
   recipe?: string;
   thumbnail_url: string | null;
+  status: string;
 }
 
 //profile type
@@ -108,7 +109,7 @@ export default function Profile() {
       // OPTIMIZED: Direct user filter query with pagination
       const { data, error } = await supabase
         .from('posts')
-        .select('id, video_url, description, created_at, thumbnail_url')
+        .select('id, video_url, description, created_at, thumbnail_url, status')
         .eq('user', userId)
         .order('created_at', { ascending: false })
         .range(offset, offset + limit - 1);
@@ -140,9 +141,15 @@ export default function Profile() {
     <TouchableOpacity 
       style={styles.postContainer}
       onPress={() => {
-        // Navigate to post detail page with profile context
-        if (session?.user?.id) {
+        // Only navigate if post is approved
+        if (item.status === 'approved' && session?.user?.id) {
           router.push(`/post/${item.id}?context=profile&contextId=${session.user.id}`);
+        } else if (item.status !== 'approved') {
+          Alert.alert(
+            'Post Under Review',
+            'This video is currently being reviewed and will be available once approved.',
+            [{ text: 'OK' }]
+          );
         }
       }}
       activeOpacity={0.8}
@@ -158,10 +165,20 @@ export default function Profile() {
           <Ionicons name="videocam" size={40} color="rgba(255,255,255,0.3)" />
         </View>
       )}
-      {/* Optional: Add play icon overlay */}
-      <View style={styles.playIconOverlay}>
-        <Ionicons name="play" size={20} color="rgba(255,255,255,0.8)" />
-      </View>
+      
+      {/* Status overlay */}
+      {item.status !== 'approved' ? (
+        <View style={styles.pendingOverlay}>
+          <View style={styles.pendingContent}>
+            <Ionicons name="time" size={24} color="#FF6B6B" />
+            <Text style={styles.pendingText}>Pending{'\n'}Approval</Text>
+          </View>
+        </View>
+      ) : (
+        <View style={styles.playIconOverlay}>
+          <Ionicons name="play" size={20} color="rgba(255,255,255,0.8)" />
+        </View>
+      )}
     </TouchableOpacity>
   );
 
@@ -526,5 +543,28 @@ const styles = StyleSheet.create({
     color: '#999',
     marginTop: 16,
     fontWeight: '500',
+  },
+  pendingOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderRadius: 8,
+  },
+  pendingContent: {
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  pendingText: {
+    color: '#fff',
+    fontSize: 12,
+    fontWeight: '600',
+    textAlign: 'center',
+    marginTop: 6,
+    lineHeight: 14,
   },
 });
