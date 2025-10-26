@@ -11,7 +11,8 @@ import {
   Platform,
   TouchableOpacity,
   Modal,
-  FlatList
+  FlatList,
+  Image
 } from "react-native";
 import { useState, useEffect } from 'react';
 import * as ImagePicker from 'expo-image-picker';
@@ -62,6 +63,7 @@ export default function UploadScreen() {
   // Video state
   const [videoUri, setVideoUri] = useState<string | null>(null);
   const [videoFileName, setVideoFileName] = useState<string>('');
+  const [thumbnailUri, setThumbnailUri] = useState<string | null>(null);
   
   // Form state
   const [description, setDescription] = useState('');
@@ -177,10 +179,14 @@ export default function UploadScreen() {
         console.log('   • Export Preset: MediumQuality (H.264 compression)');
         console.log('   • Max Duration: 180 seconds');
         
+        // Generate thumbnail from the compressed video
+        const thumbnailUri = await generateThumbnail(asset.uri);
+        
         setVideoUri(asset.uri);
         setVideoFileName(asset.uri.split('/').pop() || 'video.mp4');
+        setThumbnailUri(thumbnailUri);
         
-        console.log('✅ Video processing complete, advancing to details screen');
+        console.log('✅ Video processing and thumbnail generation complete');
         
         // Automatically advance to details screen
         setCurrentStep('details');
@@ -253,7 +259,46 @@ export default function UploadScreen() {
       }
 
       console.log('✅ Video uploaded to storage');
-      setUploadProgress(70);
+      setUploadProgress(60);
+
+      // Upload thumbnail if available
+      let thumbnailUrl = null;
+      if (thumbnailUri) {
+        console.log('📤 Uploading thumbnail...');
+        
+        const thumbnailFileName = `${userId}/${timestamp}_${random}_thumb.jpg`;
+        
+        // Read thumbnail as base64
+        const thumbnailBase64 = await FileSystem.readAsStringAsync(thumbnailUri, {
+          encoding: FileSystem.EncodingType.Base64,
+        });
+        
+        // Convert base64 to Uint8Array
+        const thumbnailByteCharacters = atob(thumbnailBase64);
+        const thumbnailByteNumbers = new Array(thumbnailByteCharacters.length);
+        for (let i = 0; i < thumbnailByteCharacters.length; i++) {
+          thumbnailByteNumbers[i] = thumbnailByteCharacters.charCodeAt(i);
+        }
+        const thumbnailByteArray = new Uint8Array(thumbnailByteNumbers);
+
+        // Upload thumbnail to public 'posts-thumbnails' bucket
+        const { data: thumbnailUploadData, error: thumbnailUploadError } = await supabase.storage
+          .from('posts-thumbnails')
+          .upload(thumbnailFileName, thumbnailByteArray, {
+            contentType: 'image/jpeg',
+            upsert: false,
+          });
+
+        if (thumbnailUploadError) {
+          console.error('Thumbnail upload error:', thumbnailUploadError);
+          // Don't fail the entire upload if thumbnail fails
+        } else {
+          thumbnailUrl = thumbnailFileName;
+          console.log('✅ Thumbnail uploaded to storage');
+        }
+      }
+
+      setUploadProgress(75);
 
       // Create post in database with status='pending'
       const { data: postData, error: postError } = await supabase
@@ -262,6 +307,7 @@ export default function UploadScreen() {
           {
             user: userId,
             video_url: storageFileName,
+            thumbnail_url: thumbnailUrl,
             description: description.trim(),
             restaurant: selectedRestaurant?.id || null,
             status: 'pending', // UGC moderation - starts as pending
@@ -318,6 +364,7 @@ export default function UploadScreen() {
   const resetForm = () => {
     setVideoUri(null);
     setVideoFileName('');
+    setThumbnailUri(null);
     setDescription('');
     setTags('');
     setLocation('');
@@ -333,6 +380,7 @@ export default function UploadScreen() {
   const changeVideo = () => {
     setVideoUri(null);
     setVideoFileName('');
+    setThumbnailUri(null);
     setCurrentStep('select');
   };
 
@@ -350,6 +398,34 @@ export default function UploadScreen() {
       }
     } catch (error) {
       console.error(`❌ Error getting ${label.toLowerCase()} video info:`, error);
+    }
+  };
+
+  const generateThumbnail = async (videoUri: string): Promise<string | null> => {
+    console.log('🖼️ Generating thumbnail from video...');
+    
+    try {
+      const thumbnail = await VideoThumbnails.getThumbnailAsync(videoUri, {
+        time: 1000, // Get thumbnail at 1 second mark
+        quality: 0.8, // High quality thumbnail
+      });
+
+      console.log(`📸 Thumbnail generated successfully:`);
+      console.log(`   • Thumbnail URI: ${thumbnail.uri}`);
+      console.log(`   • Thumbnail width: ${thumbnail.width}px`);
+      console.log(`   • Thumbnail height: ${thumbnail.height}px`);
+
+      // Log thumbnail file size
+      const thumbnailInfo = await FileSystem.getInfoAsync(thumbnail.uri);
+      if (thumbnailInfo.exists && thumbnailInfo.size) {
+        const thumbnailSizeKB = (thumbnailInfo.size / 1024).toFixed(2);
+        console.log(`   • Thumbnail size: ${thumbnailSizeKB}KB`);
+      }
+
+      return thumbnail.uri;
+    } catch (error) {
+      console.error('❌ Thumbnail generation failed:', error);
+      return null;
     }
   };
 
@@ -404,6 +480,18 @@ export default function UploadScreen() {
         {videoUri && (
           <View style={styles.compactVideoPreview}>
             <VideoPreview videoUri={videoUri} onChangeVideo={changeVideo} />
+          </View>
+        )}
+
+        {/* Thumbnail Preview */}
+        {thumbnailUri && (
+          <View style={styles.thumbnailPreview}>
+            <Text style={styles.thumbnailLabel}>Generated Thumbnail:</Text>
+            <Image
+              source={{ uri: thumbnailUri }}
+              style={styles.thumbnailImage}
+              resizeMode="cover"
+            />
           </View>
         )}
 
@@ -733,6 +821,21 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     overflow: 'hidden',
     marginBottom: 24,
+  },
+  thumbnailPreview: {
+    marginBottom: 24,
+  },
+  thumbnailLabel: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#333',
+    marginBottom: 8,
+  },
+  thumbnailImage: {
+    width: '100%',
+    height: 120,
+    borderRadius: 8,
+    backgroundColor: '#f0f0f0',
   },
   scrollContent: {
     padding: 20,
