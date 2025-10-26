@@ -27,6 +27,8 @@ export default function OnboardingScreen() {
   const [username, setUsername] = useState('');
   const [displayname, setDisplayname] = useState('');
   const [bio, setBio] = useState('');
+  const [location, setLocation] = useState('');
+  const [instagramHandle, setInstagramHandle] = useState('');
   const [avatarUri, setAvatarUri] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
@@ -54,6 +56,8 @@ export default function OnboardingScreen() {
           setUsername(profileData.username || '');
           setDisplayname(profileData.displayname || '');
           setBio(profileData.bio || '');
+          setLocation(profileData.location || '');
+          setInstagramHandle(profileData.instagram_handle || '');
           if (profileData.avatar_url) {
             // For existing avatar, we'd need to get the public URL
             const { data } = supabase.storage.from('avatars').getPublicUrl(profileData.avatar_url);
@@ -109,25 +113,46 @@ export default function OnboardingScreen() {
 
     setUploading(true);
     try {
-      const response = await fetch(avatarUri);
-      const blob = await response.blob();
-      const arrayBuffer = await blob.arrayBuffer();
-      const fileExt = avatarUri.split('.').pop()?.toLowerCase() ?? 'jpg';
+      // Get file extension, default to jpg for iOS screenshots
+      let fileExt = avatarUri.split('.').pop()?.toLowerCase() ?? 'jpg';
+      
+      // Handle iOS screenshots which might not have proper extensions
+      if (avatarUri.includes('ph://') || avatarUri.includes('assets-library://')) {
+        fileExt = 'jpg'; // iOS screenshots are typically JPG
+      }
+      
       const fileName = `${session.user.id}-${Date.now()}.${fileExt}`;
+      const mimeType = `image/${fileExt === 'jpg' ? 'jpeg' : fileExt}`;
+      
+      console.log('Uploading avatar:', { fileName, avatarUri, fileExt, mimeType });
 
+      // Use fetch to read the file as ArrayBuffer (most reliable for RN + Supabase)
+      const response = await fetch(avatarUri);
+      const arrayBuffer = await response.arrayBuffer();
+      
+      console.log('ArrayBuffer created:', { size: arrayBuffer.byteLength });
+
+      // Upload using ArrayBuffer (most compatible with Supabase)
       const { data, error } = await supabase.storage
         .from('avatars')
         .upload(fileName, arrayBuffer, {
-          contentType: `image/${fileExt}`,
+          contentType: mimeType,
           upsert: false,
         });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Supabase upload error:', error);
+        throw error;
+      }
 
+      console.log('Upload successful:', data);
       return data.path;
     } catch (error) {
       console.error('Error uploading avatar:', error);
-      Alert.alert('Error', 'Failed to upload avatar. You can add one later in settings.');
+      
+      // Provide more specific error message
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      Alert.alert('Upload Error', `Failed to upload avatar: ${errorMessage}. You can add one later in settings.`);
       return null;
     } finally {
       setUploading(false);
@@ -165,8 +190,10 @@ export default function OnboardingScreen() {
           username: username.trim().toLowerCase(),
           displayname: displayname.trim() || username.trim(),
           bio: bio.trim() || null,
+          location: location.trim() || null,
+          instagram_handle: instagramHandle.trim() || null,
           avatar_url: avatarPath,
-          onboarding_completed: true, // We'll add this column
+          onboarding_completed: true,
         })
         .eq('user_id', session.user.id);
 
@@ -199,7 +226,7 @@ export default function OnboardingScreen() {
   };
 
   const skipStep = () => {
-    if (currentStep < 3) {
+    if (currentStep < 4) {
       setCurrentStep(currentStep + 1);
     } else {
       completeOnboarding();
@@ -212,10 +239,16 @@ export default function OnboardingScreen() {
       return;
     }
     
-    if (currentStep < 3) {
+    if (currentStep < 4) {
       setCurrentStep(currentStep + 1);
     } else {
       completeOnboarding();
+    }
+  };
+
+  const goBackStep = () => {
+    if (currentStep > 1) {
+      setCurrentStep(currentStep - 1);
     }
   };
 
@@ -225,8 +258,8 @@ export default function OnboardingScreen() {
         return (
           <View style={styles.stepContent}>
             <Text style={styles.stepTitle}>Choose Your Username</Text>
-            <Text style={styles.stepDescription}>
-              This is how other food lovers will find you. You can change it later in settings.
+            <Text style={styles.stepDescriptionCompact}>
+              How other food lovers will find you
             </Text>
             
             <View style={styles.inputContainer}>
@@ -244,10 +277,8 @@ export default function OnboardingScreen() {
             
             <Text style={styles.characterCount}>{username.length}/30</Text>
             
-            <View style={styles.requirements}>
-              <Text style={styles.requirementItem}>• 3-30 characters</Text>
-              <Text style={styles.requirementItem}>• Letters, numbers, dots, and underscores only</Text>
-              <Text style={styles.requirementItem}>• Must be unique</Text>
+            <View style={styles.requirementsCompact}>
+              <Text style={styles.requirementItemCompact}>3-30 characters • Letters, numbers, dots, underscores • Must be unique</Text>
             </View>
           </View>
         );
@@ -276,26 +307,13 @@ export default function OnboardingScreen() {
       case 3:
         return (
           <View style={styles.stepContent}>
-            <Text style={styles.stepTitle}>Complete Your Profile</Text>
+            <Text style={styles.stepTitle}>Tell Us About Yourself</Text>
             <Text style={styles.stepDescription}>
-              Add a photo and bio to help others discover your food taste!
+              Share your bio and location to help others discover your food taste! (All optional)
             </Text>
             
-            <TouchableOpacity style={styles.avatarContainer} onPress={pickAvatar}>
-              {avatarUri ? (
-                <Image source={{ uri: avatarUri }} style={styles.avatar} />
-              ) : (
-                <View style={styles.avatarPlaceholder}>
-                  <Ionicons name="camera" size={32} color={Colors.textSecondary} />
-                </View>
-              )}
-              <Text style={styles.avatarText}>
-                {avatarUri ? 'Change Photo' : 'Add Photo'}
-              </Text>
-            </TouchableOpacity>
-            
             <TextInput
-              placeholder="Tell us about your food preferences... (optional)"
+              placeholder="Bio - Tell us about your food preferences..."
               placeholderTextColor={Colors.textSecondary}
               style={[styles.input, styles.bioInput]}
               onChangeText={setBio}
@@ -304,8 +322,58 @@ export default function OnboardingScreen() {
               multiline
               numberOfLines={3}
             />
-            
             <Text style={styles.characterCount}>{bio.length}/150</Text>
+            
+            <TextInput
+              placeholder="Location (e.g., San Francisco, CA)"
+              placeholderTextColor={Colors.textSecondary}
+              style={styles.input}
+              onChangeText={setLocation}
+              value={location}
+              maxLength={100}
+            />
+            <Text style={styles.characterCount}>{location.length}/100</Text>
+            
+            <View style={styles.inputContainer}>
+              <Text style={styles.inputPrefix}>@</Text>
+              <TextInput
+                placeholder="Instagram handle (optional)"
+                placeholderTextColor={Colors.textSecondary}
+                style={styles.usernameInput}
+                onChangeText={setInstagramHandle}
+                value={instagramHandle}
+                autoCapitalize="none"
+                maxLength={30}
+              />
+            </View>
+            <Text style={styles.characterCount}>{instagramHandle.length}/30</Text>
+          </View>
+        );
+
+      case 4:
+        return (
+          <View style={styles.stepContent}>
+            <Text style={styles.stepTitle}>Add Your Photo</Text>
+            <Text style={styles.stepDescription}>
+              Add a profile photo so others can recognize you! (Optional)
+            </Text>
+            
+            <TouchableOpacity style={styles.avatarContainer} onPress={pickAvatar}>
+              {avatarUri ? (
+                <Image source={{ uri: avatarUri }} style={styles.avatar} />
+              ) : (
+                <View style={styles.avatarPlaceholder}>
+                  <Ionicons name="person" size={40} color={Colors.textSecondary} />
+                </View>
+              )}
+              <Text style={styles.avatarText}>
+                {avatarUri ? 'Change Photo' : 'Add Photo'}
+              </Text>
+            </TouchableOpacity>
+            
+            {uploading && (
+              <Text style={styles.uploadingText}>Uploading photo...</Text>
+            )}
           </View>
         );
 
@@ -322,11 +390,27 @@ export default function OnboardingScreen() {
       >
         <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
           <View style={styles.header}>
+            <View style={styles.headerTop}>
+              {currentStep > 1 ? (
+                <TouchableOpacity style={styles.backButton} onPress={goBackStep}>
+                  <Ionicons name="arrow-back" size={24} color={Colors.text} />
+                </TouchableOpacity>
+              ) : (
+                <View style={styles.backButtonPlaceholder} />
+              )}
+              
+              <Text style={styles.stepIndicator}>
+                Step {currentStep} of 4
+              </Text>
+              
+              <View style={styles.backButtonPlaceholder} />
+            </View>
+            
             <Text style={styles.title}>Complete Your Profile</Text>
             <Text style={styles.subtitle}>Let's set up your profile to get started</Text>
             
             <View style={styles.progressContainer}>
-              {[1, 2, 3].map((step) => (
+              {[1, 2, 3, 4].map((step) => (
                 <View
                   key={step}
                   style={[
@@ -347,7 +431,7 @@ export default function OnboardingScreen() {
               disabled={loading || uploading}
             >
               <Text style={styles.primaryButtonText}>
-                {loading || uploading ? 'Loading...' : (currentStep === 3 ? 'Complete Setup' : 'Next')}
+                {loading || uploading ? 'Loading...' : (currentStep === 4 ? 'Complete Setup' : 'Next')}
               </Text>
             </Pressable>
 
@@ -357,7 +441,7 @@ export default function OnboardingScreen() {
               disabled={loading || uploading}
             >
               <Text style={styles.secondaryButtonText}>
-                {currentStep === 3 ? 'Skip for Now' : 'Skip'}
+                {currentStep === 4 ? 'Skip for Now' : 'Skip'}
               </Text>
             </Pressable>
           </View>
@@ -382,6 +466,29 @@ const styles = StyleSheet.create({
   header: {
     alignItems: 'center',
     paddingVertical: 40,
+  },
+  headerTop: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    width: '100%',
+    marginBottom: 20,
+  },
+  backButton: {
+    padding: 8,
+    borderRadius: 20,
+    backgroundColor: 'rgba(0, 0, 0, 0.1)',
+    borderWidth: 1,
+    borderColor: 'rgba(0, 0, 0, 0.2)',
+  },
+  backButtonPlaceholder: {
+    width: 40,
+    height: 40,
+  },
+  stepIndicator: {
+    fontSize: 16,
+    color: Colors.textSecondary,
+    fontWeight: '500',
   },
   title: {
     fontSize: 28,
@@ -429,6 +536,13 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginBottom: 40,
     lineHeight: 22,
+  },
+  stepDescriptionCompact: {
+    fontSize: 16,
+    color: Colors.textSecondary,
+    textAlign: 'center',
+    marginBottom: 30,
+    lineHeight: 20,
   },
   inputContainer: {
     flexDirection: 'row',
@@ -484,6 +598,18 @@ const styles = StyleSheet.create({
     marginBottom: 4,
     lineHeight: 18,
   },
+  requirementsCompact: {
+    backgroundColor: Colors.cardBackground,
+    borderRadius: 12,
+    padding: 12,
+    marginTop: 15,
+  },
+  requirementItemCompact: {
+    fontSize: 13,
+    color: Colors.textSecondary,
+    lineHeight: 18,
+    textAlign: 'center',
+  },
   avatarContainer: {
     alignItems: 'center',
     marginBottom: 30,
@@ -537,5 +663,12 @@ const styles = StyleSheet.create({
     color: Colors.text,
     fontSize: 16,
     fontWeight: '500',
+  },
+  uploadingText: {
+    fontSize: 14,
+    color: Colors.primary,
+    textAlign: 'center',
+    marginTop: 10,
+    fontStyle: 'italic',
   },
 });
