@@ -228,13 +228,7 @@ export default function Profile() {
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <TouchableOpacity
-          style={styles.uploadButton}
-          onPress={() => Alert.alert('Uploads', 'Email "creators@cravesocial.app" to request uploads')}
-        >
-          <Ionicons name="add" size={24} color="black" />
-        </TouchableOpacity>
-        <View style={{ flex: 1}} /> 
+        <View style={styles.headerSpacer} />
         <TouchableOpacity 
           style={styles.settingsButton} 
           onPress={() => router.push('/settings')}
@@ -484,10 +478,8 @@ const styles = StyleSheet.create({
     marginRight: 10,
     marginTop: 0,
   },
-  uploadButton: {
-    padding: 4,
-    marginLeft: 10,
-    marginTop: 0,
+  headerSpacer: {
+    flex: 1,
   },
   bio: {
     fontSize: 14,
