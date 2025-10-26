@@ -1,6 +1,6 @@
 <<<<<<< HEAD
-# Foody
-Business Idea and Hackathon Repo
+# Crave
+
 =======
 # Welcome to your Expo app 👋
 

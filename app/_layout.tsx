@@ -34,12 +34,14 @@ export default function RootLayout() {
     // Handle deep link authentication (email confirmation, password reset, etc.)
     const handleDeepLink = async (event: { url: string }) => {
       const url = event.url;
+      console.log('Deep link received:', url);
       
       // Check if this is a Supabase auth callback
       if (url.includes('#access_token') || url.includes('?access_token')) {
         const params = new URLSearchParams(url.split('#')[1] || url.split('?')[1]);
         const accessToken = params.get('access_token');
         const refreshToken = params.get('refresh_token');
+        const type = params.get('type');
         
         if (accessToken && refreshToken) {
           // Set the session from the tokens
@@ -52,6 +54,15 @@ export default function RootLayout() {
             console.error('Error setting session from deep link:', error);
           } else {
             console.log('Successfully authenticated from email link!');
+            
+            // If this is a password recovery, navigate to reset password screen
+            if (type === 'recovery') {
+              // Use setTimeout to ensure navigation happens after auth state is updated
+              setTimeout(() => {
+                const { router } = require('expo-router');
+                router.push('/reset-password');
+              }, 100);
+            }
           }
         }
       }

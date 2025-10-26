@@ -9,7 +9,7 @@ interface CraveTabIconProps {
 export function CraveTabIcon({ focused, size = 28 }: CraveTabIconProps) {
   return (
     <Image
-      source={require('@/CraveLogo3-0-1.png')}
+      source={require('@/assets/images/icon.png')}
       style={[
         styles.logo,
         { 

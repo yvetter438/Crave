@@ -15,20 +15,26 @@ export default function Index() {
   const [showRegistrationOptions, setShowRegistrationOptions] = useState(false);
   const [showLoginOptions, setShowLoginOptions] = useState(false);
   const [showEmailForm, setShowEmailForm] = useState(false);
+  const [showForgotPassword, setShowForgotPassword] = useState(false);
   const router = useRouter();
-  const { session, loading: authLoading } = useAuth();
+  const { session, loading: authLoading, needsOnboarding, profileLoading } = useAuth();
 
   //supabase logic
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
 
-  // Check if user is already logged in and redirect to main app
+  // Check if user is already logged in and redirect appropriately
   useEffect(() => {
     if (!authLoading && session) {
-      router.replace('/(tabs)');
+      // Check if user needs onboarding
+      if (needsOnboarding && !profileLoading) {
+        router.replace('/onboarding');
+      } else if (!profileLoading && !needsOnboarding) {
+        router.replace('/(tabs)');
+      }
     }
-  }, [session, authLoading]);
+  }, [session, authLoading, needsOnboarding, profileLoading]);
 
 
   async function signInWithEmail() {
@@ -59,6 +65,41 @@ export default function Index() {
       Alert.alert(error.message);
     } else if (!session) {
       Alert.alert('Please check your inbox for email verification!');
+    } else {
+      // User signed up successfully and is logged in
+      // They will be redirected to onboarding via the useEffect
+    }
+    setLoading(false);
+  }
+
+  async function resetPassword() {
+    if (!email.trim()) {
+      Alert.alert('Email Required', 'Please enter your email address to reset your password.');
+      return;
+    }
+
+    setLoading(true);
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: 'crave://reset-password', // Deep link to reset password screen
+    });
+
+    if (error) {
+      Alert.alert('Reset Password Error', error.message);
+    } else {
+      Alert.alert(
+        'Password Reset Sent!', 
+        'Check your email for a password reset link. The link will open in your app.',
+        [
+          {
+            text: 'OK',
+            onPress: () => {
+              setShowForgotPassword(false);
+              setShowEmailForm(false);
+              setEmail('');
+            }
+          }
+        ]
+      );
     }
     setLoading(false);
   }
@@ -86,8 +127,17 @@ export default function Index() {
     setShowEmailForm(false);
     setShowRegistrationOptions(false);
     setShowLoginOptions(false);
+    setShowForgotPassword(false);
     setEmail('');
     setPassword('');
+  }
+
+  const forgotPasswordHandler = () => {
+    setShowForgotPassword(true);
+  }
+
+  const backFromForgotPassword = () => {
+    setShowForgotPassword(false);
   }
 
   const registerHandler = () => {
@@ -173,7 +223,7 @@ export default function Index() {
                   <Ionicons name="arrow-back" size={24} color={Colors.textInverse} />
                 </Pressable>
                 <Text style={styles.emailFormTitle}>
-                  {isRegistering ? 'Create Account' : 'Welcome Back'}
+                  {showForgotPassword ? 'Reset Password' : (isRegistering ? 'Create Account' : 'Welcome Back')}
                 </Text>
                 <View style={{ width: 24 }} />
               </View>
@@ -189,20 +239,30 @@ export default function Index() {
                   keyboardType="email-address"
                 />
                 
-                <TextInput 
-                  placeholder="Password"  
-                  placeholderTextColor={Colors.textSecondary} 
-                  style={styles.emailFormInput}
-                  onChangeText={(text) => setPassword(text)}
-                  value={password}
-                  secureTextEntry={true}
-                  autoCapitalize="none"
-                />
+                {!showForgotPassword && (
+                  <TextInput 
+                    placeholder="Password"  
+                    placeholderTextColor={Colors.textSecondary} 
+                    style={styles.emailFormInput}
+                    onChangeText={(text) => setPassword(text)}
+                    value={password}
+                    secureTextEntry={true}
+                    autoCapitalize="none"
+                  />
+                )}
+                
+                {showForgotPassword && (
+                  <Text style={styles.forgotPasswordDescription}>
+                    Enter your email address and we'll send you a link to reset your password.
+                  </Text>
+                )}
                 
                 <Pressable 
                   style={styles.emailFormSubmitButton} 
                   onPress={() => {
-                    if (isRegistering) {
+                    if (showForgotPassword) {
+                      resetPassword();
+                    } else if (isRegistering) {
                       signUpWithEmail();
                     } else {
                       signInWithEmail();
@@ -210,22 +270,46 @@ export default function Index() {
                   }}
                 >
                   <Text style={styles.emailFormSubmitText}>
-                    {loading ? 'Loading...' : (isRegistering ? 'CREATE ACCOUNT' : 'SIGN IN')}
+                    {loading ? 'Loading...' : (showForgotPassword ? 'SEND RESET LINK' : (isRegistering ? 'CREATE ACCOUNT' : 'SIGN IN'))}
                   </Text>
                 </Pressable>
                 
-                <Pressable 
-                  style={styles.switchModeButton}
-                  onPress={() => {
-                    setIsRegistering(!isRegistering);
-                    setEmail('');
-                    setPassword('');
-                  }}
-                >
-                  <Text style={styles.switchModeText}>
-                    {isRegistering ? 'Already have an account? Sign In' : "Don't have an account? Sign Up"}
-                  </Text>
-                </Pressable>
+                {!showForgotPassword && (
+                  <>
+                    <Pressable 
+                      style={styles.forgotPasswordButton}
+                      onPress={forgotPasswordHandler}
+                    >
+                      <Text style={styles.forgotPasswordText}>
+                        Forgot your password?
+                      </Text>
+                    </Pressable>
+                    
+                    <Pressable 
+                      style={styles.switchModeButton}
+                      onPress={() => {
+                        setIsRegistering(!isRegistering);
+                        setEmail('');
+                        setPassword('');
+                      }}
+                    >
+                      <Text style={styles.switchModeText}>
+                        {isRegistering ? 'Already have an account? Sign In' : "Don't have an account? Sign Up"}
+                      </Text>
+                    </Pressable>
+                  </>
+                )}
+                
+                {showForgotPassword && (
+                  <Pressable 
+                    style={styles.switchModeButton}
+                    onPress={backFromForgotPassword}
+                  >
+                    <Text style={styles.switchModeText}>
+                      Back to Sign In
+                    </Text>
+                  </Pressable>
+                )}
               </View>
             </View>
           ) : (
@@ -503,6 +587,24 @@ const styles = StyleSheet.create({
     color: Colors.textInverse,
     fontSize: 16,
     fontWeight: '500',
+  },
+  forgotPasswordButton: {
+    marginTop: 15,
+    marginBottom: 10,
+  },
+  forgotPasswordText: {
+    color: Colors.primary,
+    fontSize: 16,
+    fontWeight: '500',
+    textAlign: 'center',
+  },
+  forgotPasswordDescription: {
+    color: Colors.textSecondary,
+    fontSize: 16,
+    textAlign: 'center',
+    marginVertical: 20,
+    lineHeight: 22,
+    paddingHorizontal: 10,
   },
   optionsHeader: {
     flexDirection: 'row',
