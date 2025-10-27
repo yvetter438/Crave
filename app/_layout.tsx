@@ -5,11 +5,133 @@ import { useEffect, useRef } from "react";
 import { AppState, AppStateStatus } from 'react-native';
 import * as Linking from 'expo-linking';
 import { supabase } from "@/lib/supabase";
+import { PostHogProvider, usePostHog } from 'posthog-react-native';
+import { POSTHOG_CONFIG } from '../config/posthog';
+
+// Session tracking component
+function SessionTracker() {
+  const posthog = usePostHog();
+  const sessionStartTime = useRef<number>(Date.now());
+  const sessionId = useRef<string>(`session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`);
+  const actionsCount = useRef<number>(0);
+  const lastScreenViewTime = useRef<number>(Date.now());
+  const currentScreen = useRef<string>('app_start');
+  const dailyOpensCount = useRef<number>(0);
+  const lastOpenDate = useRef<string>(new Date().toDateString());
+
+  useEffect(() => {
+    // Track session start
+    const sessionData = {
+      session_id: sessionId.current,
+      platform: 'mobile',
+      start_timestamp: new Date().toISOString()
+    };
+    posthog.capture('session_started', sessionData);
+    // Only log session start once per app launch
+    console.log(`📊 Session started: ${sessionId.current}`);
+
+    // Track daily app opens (smart tracking)
+    const today = new Date().toDateString();
+    const isNewDay = lastOpenDate.current !== today;
+    
+    if (isNewDay) {
+      dailyOpensCount.current = 1;
+      lastOpenDate.current = today;
+    } else {
+      dailyOpensCount.current += 1;
+    }
+
+    // Track app opened with daily context
+    const appOpenData = {
+      session_id: sessionId.current,
+      is_first_open_today: dailyOpensCount.current === 1,
+      daily_opens_count: dailyOpensCount.current,
+      platform: 'mobile',
+      open_timestamp: new Date().toISOString()
+    };
+    posthog.capture('app_opened', appOpenData);
+    
+    // Log only first open of the day
+    if (dailyOpensCount.current === 1) {
+      console.log(`📊 First app open today (${today})`);
+    }
+
+    // Track app state changes (prevent duplicate events)
+    let isBackgrounded = false;
+    const handleAppStateChange = (nextAppState: AppStateStatus) => {
+      if ((nextAppState === 'background' || nextAppState === 'inactive') && !isBackgrounded) {
+        isBackgrounded = true;
+        const sessionLength = Date.now() - sessionStartTime.current;
+        const backgroundData = {
+          session_id: sessionId.current,
+          session_length_seconds: Math.floor(sessionLength / 1000),
+          platform: 'mobile',
+          background_timestamp: new Date().toISOString()
+        };
+        posthog.capture('app_backgrounded', backgroundData);
+        console.log(`📊 App backgrounded after ${Math.floor(sessionLength / 1000)}s`);
+      } else if (nextAppState === 'active' && isBackgrounded) {
+        isBackgrounded = false;
+        // App came back to foreground
+        const resumeData = {
+          session_id: sessionId.current,
+          platform: 'mobile',
+          resume_timestamp: new Date().toISOString()
+        };
+        posthog.capture('app_resumed', resumeData);
+        console.log(`📊 App resumed`);
+      }
+    };
+
+    const subscription = AppState.addEventListener('change', handleAppStateChange);
+
+    return () => {
+      subscription.remove();
+      // Track session end with engagement metrics
+      const sessionLength = Date.now() - sessionStartTime.current;
+      const sessionDurationSeconds = Math.floor(sessionLength / 1000);
+      
+      // Calculate engagement score (duration + actions)
+      const engagementScore = Math.min(actionsCount.current + Math.floor(sessionDurationSeconds / 30), 20);
+      
+      const sessionEndData = {
+        session_id: sessionId.current,
+        session_length_seconds: sessionDurationSeconds,
+        actions_performed: actionsCount.current,
+        engagement_score: engagementScore,
+        engagement_level: engagementScore > 10 ? 'high' : engagementScore > 5 ? 'medium' : 'low',
+        platform: 'mobile',
+        end_timestamp: new Date().toISOString()
+      };
+      posthog.capture('session_ended', sessionEndData);
+      
+      // Track engagement session (only if meaningful)
+      if (sessionDurationSeconds > 10 || actionsCount.current > 0) {
+        posthog.capture('engagement_session', {
+          session_id: sessionId.current,
+          duration_seconds: sessionDurationSeconds,
+          actions_performed: actionsCount.current,
+          engagement_score: engagementScore,
+          engagement_level: engagementScore > 10 ? 'high' : engagementScore > 5 ? 'medium' : 'low',
+          platform: 'mobile',
+          session_timestamp: new Date().toISOString()
+        });
+      }
+    };
+  }, [posthog]);
+
+  return null;
+}
+
+// Test component removed - using production analytics only
 
 export default function RootLayout() {
   const appState = useRef(AppState.currentState);
 
   useEffect(() => {
+    // Test PostHog initialization
+    console.log('🚀 PostHog should be initializing...');
+    console.log('📊 PostHog API Key:', process.env.EXPO_PUBLIC_POSTHOG_API_KEY || 'phc_muxd531JqOOb1zbCcOObssnVxln04ADsbGzb7gNOwPM');
     // Handle app state changes (background/foreground)
     const handleAppStateChange = async (nextAppState: AppStateStatus) => {
       if (appState.current.match(/inactive|background/) && nextAppState === 'active') {
@@ -85,12 +207,18 @@ export default function RootLayout() {
   }, []);
 
   return (
-    <AuthProvider>
-      <ActivePostProvider>
-        <Stack screenOptions={{ headerShown: false, gestureEnabled: false}}>
-          <Stack.Screen name="index" />
-        </Stack>
-      </ActivePostProvider>
-    </AuthProvider>
+    <PostHogProvider 
+      apiKey={POSTHOG_CONFIG.apiKey}
+      options={POSTHOG_CONFIG.options}
+    >
+      <SessionTracker />
+      <AuthProvider>
+        <ActivePostProvider>
+          <Stack screenOptions={{ headerShown: false, gestureEnabled: false}}>
+            <Stack.Screen name="index" />
+          </Stack>
+        </ActivePostProvider>
+      </AuthProvider>
+    </PostHogProvider>
   );
 }

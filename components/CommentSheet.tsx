@@ -23,6 +23,7 @@ import { Colors } from '@/constants/Colors';
 import Comment from './Comment';
 import * as Haptics from 'expo-haptics';
 import { validateCommentText, containsSpam } from '@/utils/profanityFilter';
+import { useAnalytics, trackUserEvents } from '../utils/analytics';
 
 type CommentData = {
   id: number;
@@ -47,6 +48,9 @@ type CommentSheetProps = {
 };
 
 export default function CommentSheet({ visible, onClose, postId, initialCommentCount = 0 }: CommentSheetProps) {
+  // Analytics
+  const analytics = useAnalytics();
+  
   const [comments, setComments] = useState<CommentData[]>([]);
   const [commentText, setCommentText] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -273,6 +277,16 @@ export default function CommentSheet({ visible, onClose, postId, initialCommentC
         Alert.alert('Error', `Failed to post comment: ${error.message || 'Please try again.'}`);
         return;
       }
+
+      // Track comment posted
+      analytics.track(trackUserEvents.commentPosted(postId, currentUserId).event, {
+        ...trackUserEvents.commentPosted(postId, currentUserId).properties,
+        postId: parseInt(postId),
+        userId: currentUserId,
+        isReply: !!replyingTo,
+        parentCommentId: replyingTo?.id || null,
+        commentLength: commentText.trim().length,
+      });
 
       // Clear input and reply state
       setCommentText('');

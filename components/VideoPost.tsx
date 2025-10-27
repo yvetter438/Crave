@@ -12,6 +12,7 @@ import * as Haptics from 'expo-haptics';
 import CommentSheet from './CommentSheet';
 import ReportModal from './ReportModal';
 import BlockUserModal from './BlockUserModal';
+import { useAnalytics, trackUserEvents } from '@/utils/analytics';
 
 // Add this interface to handle the status type properly
 type AVPlaybackStatusSuccess = AVPlaybackStatus & {
@@ -51,6 +52,11 @@ type Restaurant = {
 
 
 export default function VideoPost({post, activePostId, shouldPlay, isFullScreen = false }: VideoPost) {
+  // Analytics
+  const analytics = useAnalytics();
+  
+  // Remove excessive logging - only track meaningful events
+  
   const player = useVideoPlayer(post.video_url, (player) => {
     player.loop = true;
     player.muted = false;
@@ -666,6 +672,13 @@ useEffect(() => {
           setIsLiked(false);
           setLikeCount(prev => prev - 1);
           console.log('Successfully unliked');
+          
+          // Track unlike event
+          analytics.track(trackUserEvents.videoUnliked(post.id.toString(), user.id).event, {
+            ...trackUserEvents.videoUnliked(post.id.toString(), user.id).properties,
+            videoId: post.id,
+            userId: user.id,
+          });
         } else {
           console.error('Error unliking:', error);
         }
@@ -689,6 +702,13 @@ useEffect(() => {
           setIsLiked(true);
           setLikeCount(prev => prev + 1);
           console.log('Successfully liked');
+          
+          // Track like event
+          analytics.track(trackUserEvents.videoLiked(post.id.toString(), user.id).event, {
+            ...trackUserEvents.videoLiked(post.id.toString(), user.id).properties,
+            videoId: post.id,
+            userId: user.id,
+          });
         } else {
           console.error('Error liking:', error);
         }

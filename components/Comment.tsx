@@ -17,6 +17,7 @@ import * as Haptics from 'expo-haptics';
 import CommentReplies from './CommentReplies';
 import ReportModal from './ReportModal';
 import BlockUserModal from './BlockUserModal';
+import { useAnalytics, trackUserEvents } from '../utils/analytics';
 
 type CommentData = {
   id: number;
@@ -43,6 +44,9 @@ type CommentProps = {
 };
 
 export default function Comment({ comment, onReply, onLikeUpdate, currentUserId, isReply = false, onCommentRemoved }: CommentProps) {
+  // Analytics
+  const analytics = useAnalytics();
+  
   const [isLiked, setIsLiked] = useState(comment.is_liked_by_user);
   const [likesCount, setLikesCount] = useState(comment.likes_count);
   const [isLiking, setIsLiking] = useState(false);
@@ -76,12 +80,14 @@ export default function Comment({ comment, onReply, onLikeUpdate, currentUserId,
 
     try {
       if (newIsLiked) {
-        // Like
+        // Like - use upsert to handle duplicates gracefully
         const { error } = await supabase
           .from('comment_likes')
-          .insert({
+          .upsert({
             comment_id: comment.id,
             user_id: currentUserId,
+          }, {
+            onConflict: 'comment_id,user_id'
           });
 
         if (error) {
@@ -89,6 +95,14 @@ export default function Comment({ comment, onReply, onLikeUpdate, currentUserId,
           // Revert on error
           setIsLiked(!newIsLiked);
           setLikesCount(likesCount);
+        } else {
+          // Track comment liked
+          analytics.track(trackUserEvents.commentLiked(comment.id.toString(), currentUserId).event, {
+            ...trackUserEvents.commentLiked(comment.id.toString(), currentUserId).properties,
+            commentId: comment.id,
+            userId: currentUserId,
+            postId: comment.post_id,
+          });
         }
       } else {
         // Unlike
@@ -103,6 +117,14 @@ export default function Comment({ comment, onReply, onLikeUpdate, currentUserId,
           // Revert on error
           setIsLiked(!newIsLiked);
           setLikesCount(likesCount);
+        } else {
+          // Track comment unliked
+          analytics.track(trackUserEvents.commentUnliked(comment.id.toString(), currentUserId).event, {
+            ...trackUserEvents.commentUnliked(comment.id.toString(), currentUserId).properties,
+            commentId: comment.id,
+            userId: currentUserId,
+            postId: comment.post_id,
+          });
         }
       }
     } catch (error) {

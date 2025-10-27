@@ -21,6 +21,7 @@ import Ionicons from '@expo/vector-icons/Ionicons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import * as ImagePicker from 'expo-image-picker';
 import { useAuth } from '@/contexts/AuthContext';
+import { useAnalytics, trackUserEvents } from '../utils/analytics';
 
 export default function OnboardingScreen() {
   const { height } = Dimensions.get('window');
@@ -33,8 +34,10 @@ export default function OnboardingScreen() {
   const [loading, setLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [currentStep, setCurrentStep] = useState(1);
+  const [onboardingStartTime] = useState(Date.now());
   const router = useRouter();
   const { session } = useAuth();
+  const analytics = useAnalytics();
 
   useEffect(() => {
     if (!session?.user) {
@@ -205,6 +208,18 @@ export default function OnboardingScreen() {
         throw error;
       }
 
+      // Track onboarding completion
+      const completionTime = Math.floor((Date.now() - onboardingStartTime) / 1000);
+      analytics.track(trackUserEvents.onboardingCompleted(4, 4, completionTime).event, {
+        ...trackUserEvents.onboardingCompleted(4, 4, completionTime).properties,
+        hasBio: !!bio.trim(),
+        hasLocation: !!location.trim(),
+        hasInstagram: !!instagramHandle.trim(),
+        hasAvatar: !!avatarPath,
+        username: username.trim(),
+        completion_time_seconds: completionTime,
+      });
+
       // Success! Navigate to main app
       Alert.alert(
         'Welcome to Crave! 🎉',
@@ -238,6 +253,20 @@ export default function OnboardingScreen() {
       Alert.alert('Username Required', 'Please enter a username to continue.');
       return;
     }
+    
+    // Track step completion
+    const stepNames = ['username', 'display_name', 'bio_location', 'avatar'];
+    analytics.track(trackUserEvents.onboardingStepCompleted(currentStep, 4, stepNames[currentStep - 1]).event, {
+      ...trackUserEvents.onboardingStepCompleted(currentStep, 4, stepNames[currentStep - 1]).properties,
+      step_data: {
+        username: currentStep === 1 ? username : undefined,
+        displayname: currentStep === 2 ? displayname : undefined,
+        bio: currentStep === 3 ? bio : undefined,
+        location: currentStep === 3 ? location : undefined,
+        instagram: currentStep === 3 ? instagramHandle : undefined,
+        hasAvatar: currentStep === 4 ? !!avatarUri : undefined,
+      }
+    });
     
     if (currentStep < 4) {
       setCurrentStep(currentStep + 1);

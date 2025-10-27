@@ -23,6 +23,7 @@ import { supabase } from '../../lib/supabase';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useAnalytics, trackUserEvents } from '../../utils/analytics';
 
 interface Restaurant {
   id: number;
@@ -57,6 +58,9 @@ function VideoPreview({ videoUri, onChangeVideo }: { videoUri: string; onChangeV
 }
 
 export default function UploadScreen() {
+  // Analytics
+  const analytics = useAnalytics();
+  
   // Upload flow state
   const [currentStep, setCurrentStep] = useState<'select' | 'details'>('select');
   
@@ -64,6 +68,7 @@ export default function UploadScreen() {
   const [videoUri, setVideoUri] = useState<string | null>(null);
   const [videoFileName, setVideoFileName] = useState<string>('');
   const [thumbnailUri, setThumbnailUri] = useState<string | null>(null);
+  const [uploadStartTime, setUploadStartTime] = useState<number | null>(null);
   
   // Form state
   const [description, setDescription] = useState('');
@@ -179,6 +184,11 @@ export default function UploadScreen() {
         console.log('   • Export Preset: MediumQuality (H.264 compression)');
         console.log('   • Max Duration: 180 seconds');
         
+        // Track video upload started
+        const videoFileInfo = await FileSystem.getInfoAsync(asset.uri);
+        const fileSize = videoFileInfo.exists && videoFileInfo.size ? videoFileInfo.size : 0;
+        analytics.track(trackUserEvents.videoUploadStarted(undefined, fileSize).event, trackUserEvents.videoUploadStarted(undefined, fileSize).properties);
+        
         // Generate thumbnail from the compressed video
         const thumbnailUri = await generateThumbnail(asset.uri);
         
@@ -215,6 +225,7 @@ export default function UploadScreen() {
 
     setUploading(true);
     setUploadProgress(0);
+    setUploadStartTime(Date.now());
 
     try {
       // Generate unique filename
@@ -329,6 +340,20 @@ export default function UploadScreen() {
       console.log('✅ Post created with ID:', postData.id);
       setUploadProgress(100);
 
+      // Track successful upload
+      const uploadFileInfo = await FileSystem.getInfoAsync(videoUri);
+      const fileSize = uploadFileInfo.exists && uploadFileInfo.size ? uploadFileInfo.size : 0;
+      const uploadTime = uploadStartTime ? Math.floor((Date.now() - uploadStartTime) / 1000) : 0;
+      analytics.track(trackUserEvents.videoUploadCompleted(180, fileSize, !!thumbnailUri, uploadTime).event, {
+        ...trackUserEvents.videoUploadCompleted(180, fileSize, !!thumbnailUri, uploadTime).properties,
+        postId: postData.id,
+        restaurantId: selectedRestaurant?.id,
+        descriptionLength: description.length,
+        hasLocation: !!location,
+        hasTags: !!tags,
+        upload_time_seconds: uploadTime,
+      });
+
       // Success!
       Alert.alert(
         'Upload Successful! 🎉',
@@ -350,6 +375,15 @@ export default function UploadScreen() {
 
     } catch (error: any) {
       console.error('Upload failed:', error);
+      
+      // Track upload failure
+      analytics.track(trackUserEvents.videoUploadFailed(error.message || 'Unknown error').event, {
+        ...trackUserEvents.videoUploadFailed(error.message || 'Unknown error').properties,
+        errorType: error.name || 'Unknown',
+        errorCode: error.code || 'N/A',
+        userId: userId,
+      });
+      
       Alert.alert(
         'Upload Failed',
         error.message || 'Something went wrong. Please try again.',
@@ -371,6 +405,7 @@ export default function UploadScreen() {
     setSelectedRestaurant(null);
     setUploadProgress(0);
     setCurrentStep('select');
+    setUploadStartTime(null);
   };
 
   const goBackToSelection = () => {
