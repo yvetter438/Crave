@@ -1,5 +1,7 @@
 import { usePostHog } from 'posthog-react-native';
 
+// AppsFlyer removed - using attribution-only setup
+
 // Custom hook for analytics
 export const useAnalytics = () => {
   const posthog = usePostHog();
@@ -12,6 +14,7 @@ export const useAnalytics = () => {
         platform: 'mobile',
       };
       
+      // Track with PostHog
       posthog.capture(event, eventData);
       
       // Count engagement actions (for session tracking)

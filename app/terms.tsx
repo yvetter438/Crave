@@ -23,7 +23,7 @@ export default function TermsOfService() {
       </View>
 
       <ScrollView style={styles.content} contentContainerStyle={styles.contentContainer}>
-        <Text style={styles.lastUpdated}>Last Updated: October 24, 2025</Text>
+        <Text style={styles.lastUpdated}>Last Updated: January 6, 2025</Text>
 
         <Text style={styles.intro}>
           Welcome to Crave! By using our app, you agree to these Terms of Service. 
@@ -141,15 +141,37 @@ export default function TermsOfService() {
         </View>
 
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>8. Privacy</Text>
+          <Text style={styles.sectionTitle}>8. Privacy & Data Collection</Text>
           <Text style={styles.paragraph}>
             Your privacy is important to us. Our collection and use of personal information 
             is governed by our Privacy Policy. By using Crave, you consent to our data practices.
           </Text>
+          <Text style={styles.paragraph}>
+            <Text style={styles.bold}>Analytics and Tracking:</Text> We use analytics services to understand how you use our app and improve your experience:
+          </Text>
+          <Text style={styles.bulletPoint}>• PostHog: Tracks app usage, user behavior, and engagement patterns</Text>
+          <Text style={styles.bulletPoint}>• AppsFlyer: Tracks app installs and attribution from marketing campaigns</Text>
+          <Text style={styles.bulletPoint}>• Sentry: Collects crash reports and performance data to improve app stability</Text>
+          <Text style={styles.paragraph}>
+            These services collect anonymous usage data and do not identify you personally. You can opt out of analytics in your device settings.
+          </Text>
         </View>
 
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>9. Termination</Text>
+          <Text style={styles.sectionTitle}>9. Data Sharing</Text>
+          <Text style={styles.paragraph}>
+            We share data with trusted third-party services to provide and improve our app:
+          </Text>
+          <Text style={styles.bulletPoint}>• Analytics providers (PostHog, AppsFlyer) for app improvement and marketing attribution</Text>
+          <Text style={styles.bulletPoint}>• Crash reporting service (Sentry) for technical support and app stability</Text>
+          <Text style={styles.bulletPoint}>• Cloud storage providers (Supabase) for secure data storage and app functionality</Text>
+          <Text style={styles.paragraph}>
+            We do not sell your personal data to third parties. All data sharing is for legitimate business purposes and app functionality.
+          </Text>
+        </View>
+
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>10. Termination</Text>
           <Text style={styles.paragraph}>
             We reserve the right to suspend or terminate your account at any time for violations 
             of these Terms of Service or our Community Guidelines. You may also terminate your 
@@ -158,7 +180,7 @@ export default function TermsOfService() {
         </View>
 
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>10. Disclaimers</Text>
+          <Text style={styles.sectionTitle}>11. Disclaimers</Text>
           <Text style={styles.paragraph}>
             Crave is provided "as is" without warranties of any kind. We do not guarantee that 
             the service will be uninterrupted, secure, or error-free. We are not responsible 
@@ -167,7 +189,7 @@ export default function TermsOfService() {
         </View>
 
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>11. Limitation of Liability</Text>
+          <Text style={styles.sectionTitle}>12. Limitation of Liability</Text>
           <Text style={styles.paragraph}>
             To the maximum extent permitted by law, Crave shall not be liable for any indirect, 
             incidental, special, or consequential damages arising from your use of the service.
@@ -175,7 +197,7 @@ export default function TermsOfService() {
         </View>
 
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>12. Changes to Terms</Text>
+          <Text style={styles.sectionTitle}>13. Changes to Terms</Text>
           <Text style={styles.paragraph}>
             We may update these Terms of Service from time to time. We will notify you of 
             significant changes by posting a notice in the app or via email. Your continued 
@@ -184,7 +206,7 @@ export default function TermsOfService() {
         </View>
 
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>13. Contact Us</Text>
+          <Text style={styles.sectionTitle}>14. Contact Us</Text>
           <Text style={styles.paragraph}>
             If you have questions about these Terms of Service, please contact us at:
           </Text>
@@ -194,7 +216,7 @@ export default function TermsOfService() {
         </View>
 
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>14. Governing Law</Text>
+          <Text style={styles.sectionTitle}>15. Governing Law</Text>
           <Text style={styles.paragraph}>
             These Terms of Service shall be governed by and construed in accordance with 
             the laws of the United States, without regard to its conflict of law provisions.

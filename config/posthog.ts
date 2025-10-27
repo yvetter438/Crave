@@ -1,8 +1,8 @@
 // PostHog Configuration
 export const POSTHOG_CONFIG = {
   apiKey: process.env.EXPO_PUBLIC_POSTHOG_API_KEY || "phc_muxd531JqOOb1zbCcOObssnVxln04ADsbGzb7gNOwPM",
-  host: process.env.EXPO_PUBLIC_POSTHOG_HOST || "https://us.i.posthog.com",
   options: {
+    host: process.env.EXPO_PUBLIC_POSTHOG_HOST || "https://us.i.posthog.com",
     // Enable autocapture for automatic event tracking
     autocapture: true,
     // Enable session replay (optional)

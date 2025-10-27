@@ -61,7 +61,7 @@
           "project": "react-native",
           "organization": "crave-ek"
         }
-      ]
+      ],
     ],
     "experiments": {
       "typedRoutes": true

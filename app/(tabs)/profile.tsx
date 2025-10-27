@@ -6,6 +6,9 @@ import { supabase } from '../../lib/supabase';
 import { Session } from '@supabase/supabase-js';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter, useFocusEffect } from 'expo-router';
+import * as Device from 'expo-device';
+import * as Application from 'expo-application';
+import { Platform } from 'react-native';
 //post type
 interface Post {
   id: number;
@@ -107,10 +110,12 @@ export default function Profile() {
   const fetchUserPosts = async (userId: string, limit: number = 20, offset: number = 0) => {
     try {  
       // OPTIMIZED: Direct user filter query with pagination
+      // Filter out removed posts - only show approved and pending posts
       const { data, error } = await supabase
         .from('posts')
         .select('id, video_url, description, created_at, thumbnail_url, status')
         .eq('user', userId)
+        .neq('status', 'removed') // Exclude removed/rejected posts
         .order('created_at', { ascending: false })
         .range(offset, offset + limit - 1);
   
@@ -236,6 +241,7 @@ export default function Profile() {
           <Ionicons name="settings-outline" size={24} color="black" />
         </TouchableOpacity>
       </View>
+      
       
       {/* <TouchableOpacity onPress={() => setModalVisible(true)}> */}
         {session?.user ? (

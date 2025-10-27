@@ -175,6 +175,29 @@ export default function CommunityGuidelines() {
 
         <View style={styles.section}>
           <View style={styles.iconTitleRow}>
+            <Ionicons name="analytics" size={24} color="#9C27B0" />
+            <Text style={styles.sectionTitle}>Privacy & Data Collection</Text>
+          </View>
+          <Text style={styles.paragraph}>
+            <Text style={styles.bold}>Respect Privacy:</Text> Respect other users' privacy and 
+            personal information. Do not share personal details in comments or posts.
+          </Text>
+          <Text style={styles.paragraph}>
+            <Text style={styles.bold}>Data Usage:</Text> We collect anonymous usage data to improve 
+            the app experience. This includes analytics (PostHog, AppsFlyer) and crash reporting (Sentry).
+          </Text>
+          <Text style={styles.paragraph}>
+            <Text style={styles.bold}>Content for Improvement:</Text> Your content may be used 
+            anonymously for app improvement and feature development.
+          </Text>
+          <Text style={styles.paragraph}>
+            <Text style={styles.bold}>Report Privacy Violations:</Text> If you see someone sharing 
+            personal information or violating privacy, report it immediately.
+          </Text>
+        </View>
+
+        <View style={styles.section}>
+          <View style={styles.iconTitleRow}>
             <Ionicons name="flag" size={24} color="#FF9800" />
             <Text style={styles.sectionTitle}>How to Report Violations</Text>
           </View>
@@ -193,7 +216,7 @@ export default function CommunityGuidelines() {
           <Text style={styles.stepItem}>
             4. Our team will review it within 24-48 hours
           </Text>
-          <Text style={styles.paragraph} style={{ marginTop: 12 }}>
+          <Text style={[styles.paragraph, { marginTop: 12 }]}>
             Reports are confidential. The person won't know you reported them.
           </Text>
         </View>
@@ -240,7 +263,7 @@ export default function CommunityGuidelines() {
         </View>
 
         <View style={styles.updatedSection}>
-          <Text style={styles.updatedText}>Last Updated: October 24, 2025</Text>
+          <Text style={styles.updatedText}>Last Updated: January 6, 2025</Text>
         </View>
       </ScrollView>
     </SafeAreaView>

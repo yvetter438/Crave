@@ -608,6 +608,15 @@ export default function Settings() {
             <Text style={styles.legalButtonText}>Community Guidelines</Text>
             <Ionicons name="chevron-forward" size={16} color="#ccc" />
           </TouchableOpacity>
+          
+          <TouchableOpacity 
+            style={styles.legalButton} 
+            onPress={() => router.push('/privacy')}
+          >
+            <Ionicons name="shield" size={20} color="#666" style={styles.legalIcon} />
+            <Text style={styles.legalButtonText}>Privacy Policy</Text>
+            <Ionicons name="chevron-forward" size={16} color="#ccc" />
+          </TouchableOpacity>
         </View>
 
         {/* Account Actions */}

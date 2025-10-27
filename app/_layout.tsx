@@ -8,6 +8,7 @@ import { supabase } from "@/lib/supabase";
 import { PostHogProvider, usePostHog } from 'posthog-react-native';
 import { POSTHOG_CONFIG } from '../config/posthog';
 import * as Sentry from '@sentry/react-native';
+// AppsFlyer removed - using attribution-only setup
 
 // Sentry configuration
 const sentryDsn = process.env.EXPO_PUBLIC_SENTRY_DSN || 'https://d0f8731573d0b3a1a83f177bf338116e@o4510258583764992.ingest.us.sentry.io/4510258637570048';
@@ -39,6 +40,8 @@ Sentry.init({
   // uncomment the line below to enable Spotlight (https://spotlightjs.com)
   // spotlight: __DEV__,
 });
+
+// AppsFlyer removed - using attribution-only setup
 
 // Session tracking component
 function SessionTracker() {
@@ -244,13 +247,13 @@ export default Sentry.wrap(function RootLayout() {
       options={POSTHOG_CONFIG.options}
     >
       <SessionTracker />
-      <AuthProvider>
-        <ActivePostProvider>
-          <Stack screenOptions={{ headerShown: false, gestureEnabled: false}}>
-            <Stack.Screen name="index" />
-          </Stack>
-        </ActivePostProvider>
-      </AuthProvider>
+    <AuthProvider>
+      <ActivePostProvider>
+        <Stack screenOptions={{ headerShown: false, gestureEnabled: false}}>
+          <Stack.Screen name="index" />
+        </Stack>
+      </ActivePostProvider>
+    </AuthProvider>
     </PostHogProvider>
   );
 });
