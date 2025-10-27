@@ -236,6 +236,7 @@ export default function Profile() {
           <Ionicons name="settings-outline" size={24} color="black" />
         </TouchableOpacity>
       </View>
+      
       {/* <TouchableOpacity onPress={() => setModalVisible(true)}> */}
         {session?.user ? (
           <Image source={{ uri: image }} style={styles.profileImage} />

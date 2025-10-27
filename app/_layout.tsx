@@ -7,6 +7,38 @@ import * as Linking from 'expo-linking';
 import { supabase } from "@/lib/supabase";
 import { PostHogProvider, usePostHog } from 'posthog-react-native';
 import { POSTHOG_CONFIG } from '../config/posthog';
+import * as Sentry from '@sentry/react-native';
+
+// Sentry configuration
+const sentryDsn = process.env.EXPO_PUBLIC_SENTRY_DSN || 'https://d0f8731573d0b3a1a83f177bf338116e@o4510258583764992.ingest.us.sentry.io/4510258637570048';
+
+Sentry.init({
+  dsn: sentryDsn,
+
+  // Adds more context data to events (IP address, cookies, user, etc.)
+  // For more information, visit: https://docs.sentry.io/platforms/react-native/data-management/data-collected/
+  sendDefaultPii: true,
+
+  // Enable Logs
+  enableLogs: true,
+
+  // Configure Session Replay
+  replaysSessionSampleRate: 0.1,
+  replaysOnErrorSampleRate: 1,
+  integrations: [Sentry.mobileReplayIntegration(), Sentry.feedbackIntegration()],
+
+  // Enable debug only in development
+  debug: __DEV__,
+  
+  // Production configuration
+  environment: __DEV__ ? 'development' : 'production',
+  
+  // Sample rate for production (reduce noise)
+  sampleRate: __DEV__ ? 1.0 : 0.1,
+  
+  // uncomment the line below to enable Spotlight (https://spotlightjs.com)
+  // spotlight: __DEV__,
+});
 
 // Session tracking component
 function SessionTracker() {
@@ -125,7 +157,7 @@ function SessionTracker() {
 
 // Test component removed - using production analytics only
 
-export default function RootLayout() {
+export default Sentry.wrap(function RootLayout() {
   const appState = useRef(AppState.currentState);
 
   useEffect(() => {
@@ -221,4 +253,4 @@ export default function RootLayout() {
       </AuthProvider>
     </PostHogProvider>
   );
-}
+});
