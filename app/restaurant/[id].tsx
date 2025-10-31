@@ -178,9 +178,9 @@ export default function RestaurantPage() {
   const renderEmptyState = () => (
     <View style={styles.emptyStateContainer}>
       <View style={styles.emptyStatePlusContainer}>
-        <Ionicons name="grid-outline" size={60} color="#bbb" />
+        <Ionicons name="videocam-outline" size={60} color="#bbb" />
       </View>
-      <Text style={styles.emptyStateText}>No posts yet</Text>
+      <Text style={styles.emptyStateText}>Be the first to post</Text>
     </View>
   );
 
@@ -202,34 +202,39 @@ export default function RestaurantPage() {
         numColumns={3}
         ListHeaderComponent={() => (
           <>
-            {/* Restaurant Name */}
-            <Text style={styles.restaurantName}>{restaurant.name}</Text>
+            {/* Restaurant Name with Cuisine Badge */}
+            <View style={styles.heroSection}>
+              <View style={styles.restaurantNameRow}>
+                <Text style={styles.restaurantName}>{restaurant.name}</Text>
+              </View>
+              <View style={styles.cuisineBadge}>
+                <Ionicons name="restaurant" size={14} color={Colors.primary} />
+                <Text style={styles.cuisineText}>{restaurant.cuisine}</Text>
+              </View>
+            </View>
 
             {/* Action Buttons */}
             <View style={styles.actionButtons}>
               <TouchableOpacity
-                style={styles.actionButton}
+                style={styles.actionButtonIcon}
                 onPress={() => openPhone(restaurant.phone)}
               >
-                <Ionicons name="call" size={20} color="white" />
-                <Text style={styles.actionButtonText}>Call</Text>
+                <Ionicons name="call" size={22} color="white" />
               </TouchableOpacity>
 
               <TouchableOpacity
-                style={styles.actionButton}
+                style={styles.actionButtonIcon}
                 onPress={() => openMaps(restaurant.address)}
               >
-                <Ionicons name="navigate" size={20} color="white" />
-                <Text style={styles.actionButtonText}>Directions</Text>
+                <Ionicons name="navigate" size={22} color="white" />
               </TouchableOpacity>
 
               {restaurant.website && (
                 <TouchableOpacity
-                  style={styles.actionButton}
+                  style={styles.actionButtonIcon}
                   onPress={() => openWebsite(restaurant.website!)}
                 >
-                  <Ionicons name="globe" size={20} color="white" />
-                  <Text style={styles.actionButtonText}>Website</Text>
+                  <Ionicons name="globe" size={22} color="white" />
                 </TouchableOpacity>
               )}
             </View>
@@ -280,19 +285,41 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-  restaurantName: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    textAlign: 'left',
-    marginTop: 20,
-    marginBottom: 15,
+  heroSection: {
     paddingHorizontal: 20,
+    paddingTop: 20,
+    paddingBottom: 8,
+  },
+  restaurantNameRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  restaurantName: {
+    fontSize: 28,
+    fontWeight: 'bold',
+    color: '#333',
+  },
+  cuisineBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    alignSelf: 'flex-start',
+    backgroundColor: '#FFF5F5',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 16,
+    gap: 6,
+  },
+  cuisineText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: Colors.primary,
   },
   actionButtons: {
     flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
+    gap: 12,
     paddingHorizontal: 20,
+    marginTop: 16,
     marginBottom: 20,
   },
   actionButton: {
@@ -303,6 +330,22 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 3,
+    elevation: 2,
+  },
+  actionButtonIcon: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: Colors.primary,
+    justifyContent: 'center',
+    alignItems: 'center',
     shadowColor: '#000',
     shadowOffset: {
       width: 0,
