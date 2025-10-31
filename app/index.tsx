@@ -2,9 +2,8 @@ import { Text, View, TextInput, StyleSheet, Dimensions, Pressable, KeyboardAvoid
 import { Link, useRouter } from 'expo-router';
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
-import { Colors, Gradients } from '@/constants/Colors';
+import { Colors } from '@/constants/Colors';
 import Ionicons from '@expo/vector-icons/Ionicons';
-import Svg, { Image, Ellipse, ClipPath } from 'react-native-svg';
 import { AppleSignIn } from '@/components/AppleSignIn';
 import { useAuth } from '@/contexts/AuthContext';
 
@@ -172,21 +171,6 @@ export default function Index() {
   if (authLoading) {
     return (
       <View style={styles.loadingContainer}>
-        <View style={[StyleSheet.absoluteFill, styles.backgroundContainer]}>
-          <Svg height={height + 100} width={width}>
-            <ClipPath id="clipPathId">
-              <Ellipse cx={width / 2} rx={height} ry={height + 100} />
-            </ClipPath>
-            <Image 
-              href={require('.././assets/images/login-background.png')}
-              width={width + 100} 
-              height={height + 100}
-              preserveAspectRatio="xMidYMid slice"
-              x={-50}
-              clipPath="url(#clipPathId)"
-            />
-          </Svg>
-        </View>
         <ActivityIndicator size="large" color={Colors.primary} />
       </View>
     );
@@ -200,22 +184,6 @@ export default function Index() {
     >
       <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
         <View style={styles.container}>
-          <View style={[StyleSheet.absoluteFill, styles.backgroundContainer]}>
-            <Svg height={height + 100} width={width}>
-              <ClipPath id="clipPathId">
-                <Ellipse cx={width / 2} rx={height} ry={height + 100} />
-              </ClipPath>
-              <Image 
-                href={require('.././assets/images/login-background.png')}
-                width={width + 100} 
-                height={height + 100}
-                preserveAspectRatio="xMidYMid slice"
-                x={-50}
-                clipPath="url(#clipPathId)"
-              />
-            </Svg>
-          </View>
-          
           {showEmailForm ? (
             <View style={styles.emailFormContainer}>
               <View style={styles.emailFormHeader}>
@@ -323,7 +291,7 @@ export default function Index() {
                   </View>
                   <View style={styles.buttonContainer}>
                     <Pressable style={styles.button} onPress={registerHandler}>
-                      <Text style={styles.buttonText}>REGISTER</Text>
+                      <Text style={styles.buttonText}>SIGN UP</Text>
                     </Pressable>
                   </View>
                 </>
@@ -333,7 +301,7 @@ export default function Index() {
                     <Pressable style={styles.optionsBackButton} onPress={backToMainHandler}>
                       <Ionicons name="arrow-back" size={24} color={Colors.textInverse} />
                     </Pressable>
-                    <Text style={styles.registrationTitle}>Choose how to sign up</Text>
+                    <Text style={styles.registrationTitle}>Sign Up for Crave</Text>
                     <View style={{ width: 24 }} />
                   </View>
                   
@@ -355,7 +323,7 @@ export default function Index() {
                     <Pressable style={styles.optionsBackButton} onPress={backToMainFromLoginHandler}>
                       <Ionicons name="arrow-back" size={24} color={Colors.textInverse} />
                     </Pressable>
-                    <Text style={styles.registrationTitle}>Choose how to sign in</Text>
+                    <Text style={styles.registrationTitle}>Log in to Crave</Text>
                     <View style={{ width: 24 }} />
                   </View>
                   
@@ -385,11 +353,13 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     justifyContent: "flex-end",
+    backgroundColor: Colors.background,
   },
   loadingContainer: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
+    backgroundColor: Colors.background,
   },
   button: {
     backgroundColor: Colors.primary,
@@ -420,12 +390,9 @@ const styles = StyleSheet.create({
     letterSpacing: 0.5
   },
   bottomContainer: {
-    justifyContent: 'flex-end',
+    justifyContent: 'flex-start',
     height: height / 2.2,
-    paddingBottom: 60,
-  },
-  backgroundContainer: {
-    zIndex: -1,
+    paddingTop: 80,
   },
   buttonContainer: {
     marginBottom: 20,

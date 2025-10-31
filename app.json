@@ -9,6 +9,8 @@
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "splash": {
+      "image": "./assets/images/login-background.png",
+      "resizeMode": "cover",
       "backgroundColor": "#FEFEFE"
     },
     "ios": {
@@ -64,7 +66,7 @@
           "project": "react-native",
           "organization": "crave-ek"
         }
-      ],
+      ]
     ],
     "experiments": {
       "typedRoutes": true
