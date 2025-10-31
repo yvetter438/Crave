@@ -59,7 +59,7 @@ export const AppleSignIn: React.FC<AppleSignInProps> = ({ onSuccess, onError }) 
   return (
     <AppleAuthentication.AppleAuthenticationButton
       buttonType={AppleAuthentication.AppleAuthenticationButtonType.CONTINUE}
-      buttonStyle={AppleAuthentication.AppleAuthenticationButtonStyle.BLACK}
+      buttonStyle={AppleAuthentication.AppleAuthenticationButtonStyle.WHITE_OUTLINE}
       cornerRadius={35}
       style={{ width: width - 40, height: 55 }}
       onPress={handleAppleSignIn}

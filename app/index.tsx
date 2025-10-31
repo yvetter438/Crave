@@ -281,9 +281,10 @@ export default function Index() {
               </View>
             </View>
           ) : (
-            <View style={styles.bottomContainer}>
+            <>
               {!showRegistrationOptions && !showLoginOptions ? (
-                <>
+                <View style={styles.initialWrapper}>
+                  <Text style={styles.initialTitle}>Log in to Crave</Text>
                   <View style={styles.buttonContainer}>
                     <Pressable style={styles.button} onPress={loginHandler}>
                       <Text style={styles.buttonText}>LOG IN</Text>
@@ -294,9 +295,9 @@ export default function Index() {
                       <Text style={styles.buttonText}>SIGN UP</Text>
                     </Pressable>
                   </View>
-                </>
+                </View>
               ) : showRegistrationOptions ? (
-                <View style={styles.buttonContainer}>
+                <View style={[styles.bottomContainer, styles.buttonContainer]}>
                   <View style={styles.optionsHeader}>
                     <Pressable style={styles.optionsBackButton} onPress={backToMainHandler}>
                       <Ionicons name="arrow-back" size={24} color={Colors.textInverse} />
@@ -318,29 +319,35 @@ export default function Index() {
                   </View>
                 </View>
               ) : (
-                <View style={styles.buttonContainer}>
-                  <View style={styles.optionsHeader}>
-                    <Pressable style={styles.optionsBackButton} onPress={backToMainFromLoginHandler}>
-                      <Ionicons name="arrow-back" size={24} color={Colors.textInverse} />
+                <>
+                  <View style={[styles.bottomContainer, styles.buttonContainer]}>
+                    <View style={styles.optionsHeader}>
+                      <Pressable style={styles.optionsBackButton} onPress={backToMainFromLoginHandler}>
+                        <Ionicons name="arrow-back" size={24} color={Colors.textInverse} />
+                      </Pressable>
+                      <Text style={styles.registrationTitle}>Log in to Crave</Text>
+                      <View style={{ width: 24 }} />
+                    </View>
+                    
+                    <Pressable style={styles.button} onPress={emailLoginHandler}>
+                      <Ionicons name="mail-outline" size={20} color={Colors.textInverse} style={styles.buttonIcon} />
+                      <Text style={styles.buttonText}>Continue with Email</Text>
                     </Pressable>
-                    <Text style={styles.registrationTitle}>Log in to Crave</Text>
-                    <View style={{ width: 24 }} />
+                    
+                    <View style={styles.appleButtonContainer}>
+                      <AppleSignIn 
+                        onSuccess={handleAppleSignInSuccess}
+                        onError={handleAppleSignInError}
+                      />
+                    </View>
                   </View>
-                  
-                  <Pressable style={styles.button} onPress={emailLoginHandler}>
-                    <Ionicons name="mail-outline" size={20} color={Colors.textInverse} style={styles.buttonIcon} />
-                    <Text style={styles.buttonText}>Continue with Email</Text>
+                  <Pressable style={styles.loginFooter} onPress={registerHandler}>
+                    <Text style={styles.loginFooterText}>Don't have an account? </Text>
+                    <Text style={styles.loginFooterLink}>Sign Up</Text>
                   </Pressable>
-                  
-                  <View style={styles.appleButtonContainer}>
-                    <AppleSignIn 
-                      onSuccess={handleAppleSignInSuccess}
-                      onError={handleAppleSignInError}
-                    />
-                  </View>
-                </View>
+                </>
               )}
-            </View>
+            </>
           )}
         </View>
       </TouchableWithoutFeedback>
@@ -352,8 +359,9 @@ const { height, width } = Dimensions.get("window");
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    justifyContent: "flex-end",
+    justifyContent: "flex-start",
     backgroundColor: Colors.background,
+    position: 'relative',
   },
   loadingContainer: {
     flex: 1,
@@ -391,8 +399,20 @@ const styles = StyleSheet.create({
   },
   bottomContainer: {
     justifyContent: 'flex-start',
-    height: height / 2.2,
-    paddingTop: 80,
+    paddingTop: 100,
+  },
+  initialWrapper: {
+    position: 'absolute',
+    top: height * .15,
+    left: 0,
+    right: 0,
+  },
+  initialTitle: {
+    fontSize: 28,
+    fontWeight: 'bold',
+    color: Colors.text,
+    textAlign: 'center',
+    marginBottom: 16,
   },
   buttonContainer: {
     marginBottom: 20,
@@ -469,7 +489,7 @@ const styles = StyleSheet.create({
   registrationTitle: {
     fontSize: 24,
     fontWeight: 'bold',
-    color: Colors.textInverse,
+    color: Colors.text,
     textAlign: 'center',
     marginBottom: 20,
     marginTop: 10,
@@ -591,5 +611,31 @@ const styles = StyleSheet.create({
   appleButtonContainer: {
     marginHorizontal: 20,
     marginVertical: 10,
+  },
+  loginFooter: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    height: height * 0.1,
+    borderTopWidth: 1,
+    borderTopColor: Colors.border,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#F5F5F5',
+    paddingTop: 0,
+    paddingHorizontal: 20,
+  },
+  loginFooterText: {
+    fontSize: 16,
+    color: Colors.textSecondary,
+    marginBottom: 20,
+  },
+  loginFooterLink: {
+    fontSize: 16,
+    color: Colors.primary,
+    fontWeight: '600',
+    marginBottom: 20,
   },
 });
