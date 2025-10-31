@@ -46,13 +46,20 @@ export default function PostDetailScreen() {
       // Fetch the initial post
       const { data: clickedPost, error: initialError } = await supabase
         .from('posts')
-        .select('id, video_url, description, user, restaurant, created_at')
+        .select('id, video_url, description, user, restaurant, created_at, status')
         .eq('id', id)
         .single();
 
       if (initialError || !clickedPost) {
         console.error('Error fetching initial post:', initialError);
         setLoading(false);
+        return;
+      }
+
+      // Check if post is removed/rejected - block access
+      if (clickedPost.status === 'removed') {
+        console.log('Post is removed, redirecting back');
+        router.back();
         return;
       }
 
@@ -97,6 +104,7 @@ export default function PostDetailScreen() {
           .from('posts')
           .select('id, video_url, description, user, restaurant, created_at')
           .eq('user', contextId || clickedPost.user)
+          .neq('status', 'removed') // Exclude removed posts
           .order('created_at', { ascending: false })
           .limit(100); // Load more posts for scrolling
       } else if (feedContext === 'restaurant') {
@@ -104,6 +112,7 @@ export default function PostDetailScreen() {
           .from('posts')
           .select('id, video_url, description, user, restaurant, created_at')
           .eq('restaurant', contextId || clickedPost.restaurant)
+          .neq('status', 'removed') // Exclude removed posts
           .order('created_at', { ascending: false })
           .limit(100);
       }
@@ -138,6 +147,7 @@ export default function PostDetailScreen() {
             .select('id, video_url, description, user, restaurant')
             .eq('user', contextId || initialPost.user)
             .neq('id', initialPost.id)
+            .neq('status', 'removed') // Exclude removed posts
             .order('created_at', { ascending: false })
             .range(offset, offset + limit - 1);
           break;
@@ -149,6 +159,7 @@ export default function PostDetailScreen() {
             .select('id, video_url, description, user, restaurant')
             .eq('restaurant', contextId || initialPost.restaurant)
             .neq('id', initialPost.id)
+            .neq('status', 'removed') // Exclude removed posts
             .order('created_at', { ascending: false })
             .range(offset, offset + limit - 1);
           break;
