@@ -108,6 +108,9 @@ export default function Index() {
 
   const loginHandler = () => {
     setShowLoginOptions(true);
+    setShowRegistrationOptions(false);
+    setShowEmailForm(false);
+    setIsRegistering(false);
   }
 
   const emailLoginHandler = () => {
@@ -141,6 +144,9 @@ export default function Index() {
 
   const registerHandler = () => {
     setShowRegistrationOptions(true);
+    setShowLoginOptions(false);
+    setShowEmailForm(false);
+    setIsRegistering(false);
   }
 
   const emailRegisterHandler = () => {
@@ -297,27 +303,33 @@ export default function Index() {
                   </View>
                 </View>
               ) : showRegistrationOptions ? (
-                <View style={[styles.bottomContainer, styles.buttonContainer]}>
-                  <View style={styles.optionsHeader}>
-                    <Pressable style={styles.optionsBackButton} onPress={backToMainHandler}>
-                      <Ionicons name="arrow-back" size={24} color={Colors.textInverse} />
+                <>
+                  <View style={[styles.bottomContainer, styles.buttonContainer]}>
+                    <View style={styles.optionsHeader}>
+                      <Pressable style={styles.optionsBackButton} onPress={backToMainHandler}>
+                        <Ionicons name="arrow-back" size={24} color={Colors.textInverse} />
+                      </Pressable>
+                      <Text style={styles.registrationTitle}>Sign Up for Crave</Text>
+                      <View style={{ width: 24 }} />
+                    </View>
+                    
+                    <Pressable style={styles.button} onPress={emailRegisterHandler}>
+                      <Ionicons name="mail-outline" size={20} color={Colors.textInverse} style={styles.buttonIcon} />
+                      <Text style={styles.buttonText}>Continue with Email</Text>
                     </Pressable>
-                    <Text style={styles.registrationTitle}>Sign Up for Crave</Text>
-                    <View style={{ width: 24 }} />
+                    
+                    <View style={styles.appleButtonContainer}>
+                      <AppleSignIn 
+                        onSuccess={handleAppleSignInSuccess}
+                        onError={handleAppleSignInError}
+                      />
+                    </View>
                   </View>
-                  
-                  <Pressable style={styles.button} onPress={emailRegisterHandler}>
-                    <Ionicons name="mail-outline" size={20} color={Colors.textInverse} style={styles.buttonIcon} />
-                    <Text style={styles.buttonText}>Continue with Email</Text>
+                  <Pressable style={styles.loginFooter} onPress={loginHandler}>
+                    <Text style={styles.loginFooterText}>Already have an account? </Text>
+                    <Text style={styles.loginFooterLink}>Log In</Text>
                   </Pressable>
-                  
-                  <View style={styles.appleButtonContainer}>
-                    <AppleSignIn 
-                      onSuccess={handleAppleSignInSuccess}
-                      onError={handleAppleSignInError}
-                    />
-                  </View>
-                </View>
+                </>
               ) : (
                 <>
                   <View style={[styles.bottomContainer, styles.buttonContainer]}>
