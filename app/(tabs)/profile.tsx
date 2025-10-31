@@ -233,6 +233,12 @@ export default function Profile() {
   return (
     <View style={styles.container}>
       <View style={styles.header}>
+        <TouchableOpacity 
+          style={styles.addButton} 
+          onPress={() => router.push('/(tabs)/upload')}
+        >
+          <Ionicons name="add-circle-outline" size={28} color="black" />
+        </TouchableOpacity>
         <View style={styles.headerSpacer} />
         <TouchableOpacity 
           style={styles.settingsButton} 
@@ -487,6 +493,11 @@ const styles = StyleSheet.create({
   },
   headerSpacer: {
     flex: 1,
+  },
+  addButton: {
+    padding: 4,
+    marginLeft: 10,
+    marginTop: 0,
   },
   bio: {
     fontSize: 14,

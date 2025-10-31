@@ -33,26 +33,34 @@ interface Restaurant {
 }
 
 // Separate component for video preview to avoid hook ordering issues
-function VideoPreview({ videoUri, onChangeVideo }: { videoUri: string; onChangeVideo: () => void }) {
+function VideoPreview({ videoUri, onChangeVideo, fullScreen = false }: { videoUri: string; onChangeVideo: () => void; fullScreen?: boolean }) {
   const player = useVideoPlayer(videoUri, (player) => {
     player.loop = true;
     player.muted = false;
   });
 
+  // Auto-play video when it loads
+  useEffect(() => {
+    player.play();
+  }, [player]);
+
   return (
-    <View style={styles.videoPreview}>
+    <View style={fullScreen ? styles.fullScreenVideoPreview : styles.videoPreview}>
       <VideoView
         player={player}
         style={styles.video}
-        contentFit="cover"
+        contentFit={fullScreen ? "contain" : "cover"}
+        nativeControls={false}
       />
-      <Pressable 
-        style={styles.changeVideoButton}
-        onPress={onChangeVideo}
-      >
-        <Ionicons name="refresh" size={20} color="#fff" />
-        <Text style={styles.changeVideoText}>Change Video</Text>
-      </Pressable>
+      {!fullScreen && (
+        <Pressable 
+          style={styles.changeVideoButton}
+          onPress={onChangeVideo}
+        >
+          <Ionicons name="refresh" size={20} color="#fff" />
+          <Text style={styles.changeVideoText}>Change Video</Text>
+        </Pressable>
+      )}
     </View>
   );
 }
@@ -62,7 +70,7 @@ export default function UploadScreen() {
   const analytics = useAnalytics();
   
   // Upload flow state
-  const [currentStep, setCurrentStep] = useState<'select' | 'details'>('select');
+  const [currentStep, setCurrentStep] = useState<'select' | 'preview' | 'details'>('select');
   
   // Video state
   const [videoUri, setVideoUri] = useState<string | null>(null);
@@ -198,8 +206,8 @@ export default function UploadScreen() {
         
         console.log('✅ Video processing and thumbnail generation complete');
         
-        // Automatically advance to details screen
-        setCurrentStep('details');
+        // Automatically advance to preview screen
+        setCurrentStep('preview');
       }
     } catch (error) {
       console.error('Error picking video:', error);
@@ -412,6 +420,14 @@ export default function UploadScreen() {
     setCurrentStep('select');
   };
 
+  const goBackToPreview = () => {
+    setCurrentStep('preview');
+  };
+
+  const goToDetails = () => {
+    setCurrentStep('details');
+  };
+
   const changeVideo = () => {
     setVideoUri(null);
     setVideoFileName('');
@@ -500,7 +516,7 @@ export default function UploadScreen() {
   const renderVideoDetailsScreen = () => (
     <View style={styles.detailsScreen}>
       <View style={styles.detailsHeader}>
-        <TouchableOpacity style={styles.backButton} onPress={goBackToSelection}>
+        <TouchableOpacity style={styles.backButton} onPress={goBackToPreview}>
           <Ionicons name="arrow-back" size={24} color="#333" />
         </TouchableOpacity>
         <Text style={styles.detailsTitle}>Video Details</Text>
@@ -511,29 +527,10 @@ export default function UploadScreen() {
         contentContainerStyle={styles.detailsContent}
         keyboardShouldPersistTaps="handled"
       >
-        {/* Video Preview */}
-        {videoUri && (
-          <View style={styles.compactVideoPreview}>
-            <VideoPreview videoUri={videoUri} onChangeVideo={changeVideo} />
-          </View>
-        )}
-
-        {/* Thumbnail Preview */}
-        {thumbnailUri && (
-          <View style={styles.thumbnailPreview}>
-            <Text style={styles.thumbnailLabel}>Generated Thumbnail:</Text>
-            <Image
-              source={{ uri: thumbnailUri }}
-              style={styles.thumbnailImage}
-              resizeMode="cover"
-            />
-          </View>
-        )}
-
-        {/* Form Fields */}
-        <View style={styles.formContainer}>
-          {/* Description */}
-          <View style={styles.inputGroup}>
+        {/* Header with Description and Thumbnail */}
+        <View style={styles.detailsHeaderSection}>
+          {/* Description on the left */}
+          <View style={styles.descriptionContainer}>
             <Text style={styles.label}>
               Description <Text style={styles.required}>*</Text>
             </Text>
@@ -549,6 +546,25 @@ export default function UploadScreen() {
             />
             <Text style={styles.characterCount}>{description.length}/500</Text>
           </View>
+
+          {/* Thumbnail on the right */}
+          {thumbnailUri && (
+            <TouchableOpacity 
+              style={styles.miniThumbnailContainer}
+              onPress={goBackToPreview}
+              activeOpacity={0.7}
+            >
+              <Image
+                source={{ uri: thumbnailUri }}
+                style={styles.miniThumbnailImage}
+                resizeMode="cover"
+              />
+            </TouchableOpacity>
+          )}
+        </View>
+
+        {/* Form Fields */}
+        <View style={styles.formContainer}>
 
           {/* Restaurant */}
           <View style={styles.inputGroup}>
@@ -646,6 +662,42 @@ export default function UploadScreen() {
     </View>
   );
 
+  const renderVideoPreviewScreen = () => (
+    <Modal
+      visible={currentStep === 'preview'}
+      animationType="fade"
+      presentationStyle="fullScreen"
+      statusBarTranslucent={true}
+      onRequestClose={goBackToSelection}
+    >
+      <View style={styles.previewScreen}>
+        {/* Full Screen Video Preview */}
+        {videoUri && (
+          <View style={styles.fullScreenVideoContainer}>
+            <VideoPreview videoUri={videoUri} onChangeVideo={changeVideo} fullScreen={true} />
+          </View>
+        )}
+
+        {/* Back Button Overlay */}
+        <TouchableOpacity 
+          style={styles.previewBackButtonOverlay} 
+          onPress={goBackToSelection}
+        >
+          <Ionicons name="arrow-back" size={24} color="white" />
+        </TouchableOpacity>
+
+        {/* Next Button Overlay */}
+        <Pressable
+          style={styles.previewNextButtonOverlay}
+          onPress={goToDetails}
+        >
+          <Text style={styles.previewNextButtonText}>Next</Text>
+          <Ionicons name="arrow-forward" size={20} color="#fff" />
+        </Pressable>
+      </View>
+    </Modal>
+  );
+
   const renderRestaurantModal = () => (
     <Modal
       visible={showRestaurantModal}
@@ -711,16 +763,20 @@ export default function UploadScreen() {
   );
 
   return (
-    <SafeAreaView style={styles.container}>
-      <KeyboardAvoidingView 
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        style={styles.keyboardAvoid}
-      >
-        {currentStep === 'select' ? renderVideoSelectionScreen() : renderVideoDetailsScreen()}
-      </KeyboardAvoidingView>
+    <>
+      <SafeAreaView style={styles.container}>
+        <KeyboardAvoidingView 
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          style={styles.keyboardAvoid}
+        >
+          {currentStep === 'select' && renderVideoSelectionScreen()}
+          {currentStep === 'details' && renderVideoDetailsScreen()}
+        </KeyboardAvoidingView>
 
-      {renderRestaurantModal()}
-    </SafeAreaView>
+        {renderRestaurantModal()}
+      </SafeAreaView>
+      {renderVideoPreviewScreen()}
+    </>
   );
 }
 
@@ -851,6 +907,32 @@ const styles = StyleSheet.create({
     padding: 20,
     paddingBottom: 40,
   },
+  detailsHeaderSection: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    marginBottom: 24,
+    gap: 16,
+  },
+  descriptionContainer: {
+    flex: 1,
+    gap: 8,
+  },
+  miniThumbnailContainer: {
+    width: 120,
+    height: 120,
+    borderRadius: 12,
+    overflow: 'hidden',
+    backgroundColor: '#f0f0f0',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 3,
+  },
+  miniThumbnailImage: {
+    width: '100%',
+    height: '100%',
+  },
   compactVideoPreview: {
     height: 200,
     borderRadius: 12,
@@ -897,6 +979,11 @@ const styles = StyleSheet.create({
     aspectRatio: 9 / 16,
     borderRadius: 16,
     overflow: 'hidden',
+    backgroundColor: '#000',
+  },
+  fullScreenVideoPreview: {
+    width: '100%',
+    height: '100%',
     backgroundColor: '#000',
   },
   video: {
@@ -1169,6 +1256,51 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#999',
     marginTop: 12,
+  },
+  // Video Preview Screen
+  previewScreen: {
+    flex: 1,
+    backgroundColor: '#000',
+  },
+  fullScreenVideoContainer: {
+    flex: 1,
+    width: '100%',
+  },
+  previewBackButtonOverlay: {
+    position: 'absolute',
+    top: 60,
+    left: 20,
+    zIndex: 10,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    borderRadius: 25,
+    width: 50,
+    height: 50,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  previewNextButtonOverlay: {
+    position: 'absolute',
+    bottom: 60,
+    right: 20,
+    zIndex: 10,
+    backgroundColor: '#FF6B6B',
+    paddingVertical: 16,
+    paddingHorizontal: 32,
+    borderRadius: 30,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    shadowColor: '#FF6B6B',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  previewNextButtonText: {
+    color: '#fff',
+    fontSize: 18,
+    fontWeight: '600',
   },
 });
 
