@@ -25,7 +25,12 @@
           "telephony",
           "telephony"
         ],
-        "ITSAppUsesNonExemptEncryption": false
+        "ITSAppUsesNonExemptEncryption": false,
+        "LSApplicationQueriesSchemes": [
+          "instagram",
+          "instagram-stories",
+          "instagram-wm"
+        ]
       }
     },
     "android": {

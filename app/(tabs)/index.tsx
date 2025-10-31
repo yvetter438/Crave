@@ -11,8 +11,11 @@ import { supabase } from '../../lib/supabase';
 import { useActivePost } from '@/context/ActivePostContext';
 import { useFocusEffect } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
+import NeighborhoodBadge from '@/components/NeighborhoodBadge';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 export default function Tab() {
+  const insets = useSafeAreaInsets();
   const { activePostId, setActivePostId}  = useActivePost();
   const [posts, setPosts] = useState([]);
   const [isAppActive, setIsAppActive] = useState(true);
@@ -264,6 +267,9 @@ export default function Tab() {
 
   return (
     <View style={styles.container}>
+      <View style={[styles.badgeContainer, { top: Math.max(insets.top + 8, 16) }]} pointerEvents="box-none">
+        <NeighborhoodBadge label="University District" />
+      </View>
       <FlatList
       data={feedData} 
       renderItem={({ item }) => {
@@ -305,6 +311,13 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: 'black',
+  },
+  badgeContainer: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    alignItems: 'center',
+    zIndex: 10,
   },
   emptyStateContainer: {
     flex: 1,
