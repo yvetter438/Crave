@@ -12,9 +12,10 @@ import {
   TouchableOpacity,
   Modal,
   FlatList,
-  Image
+  Image,
+  Animated
 } from "react-native";
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import * as ImagePicker from 'expo-image-picker';
 import * as FileSystem from 'expo-file-system/legacy';
 import * as VideoThumbnails from 'expo-video-thumbnails';
@@ -30,6 +31,52 @@ interface Restaurant {
   name: string;
   cuisine: string;
   address: string;
+}
+
+// Animated pulse icon component
+function PulseIcon() {
+  const pulseAnim = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    const pulse = Animated.loop(
+      Animated.sequence([
+        Animated.timing(pulseAnim, {
+          toValue: 1,
+          duration: 1500,
+          useNativeDriver: true,
+        }),
+        Animated.timing(pulseAnim, {
+          toValue: 0,
+          duration: 1500,
+          useNativeDriver: true,
+        }),
+      ])
+    );
+    pulse.start();
+    return () => pulse.stop();
+  }, [pulseAnim]);
+
+  const opacity = pulseAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: [0.3, 0],
+  });
+
+  const scale = pulseAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: [1, 1.3],
+  });
+
+  return (
+    <Animated.View
+      style={[
+        styles.pulseRing,
+        {
+          opacity,
+          transform: [{ scale }],
+        },
+      ]}
+    />
+  );
 }
 
 // Separate component for video preview to avoid hook ordering issues
@@ -482,34 +529,55 @@ export default function UploadScreen() {
 
   const renderVideoSelectionScreen = () => (
     <View style={styles.selectionScreen}>
-      <View style={styles.selectionHeader}>
-        <Text style={styles.selectionTitle}>Upload Video</Text>
-        <Text style={styles.selectionSubtitle}>Share your food experience with the world</Text>
-      </View>
-
-      <View style={styles.selectionContent}>
-        <Pressable style={styles.videoSelector} onPress={pickVideo}>
-          <View style={styles.videoSelectorIcon}>
-            <Ionicons name="videocam" size={64} color="#FF6B6B" />
-          </View>
-          <Text style={styles.videoSelectorTitle}>Tap to Select Video</Text>
-          <Text style={styles.videoSelectorSubtitle}>Choose from your camera roll</Text>
-          <View style={styles.videoRequirements}>
-            <Text style={styles.requirementText}>• Maximum 3 minutes</Text>
-            <Text style={styles.requirementText}>• Up to 50MB file size</Text>
-            <Text style={styles.requirementText}>• Automatically optimized</Text>
-          </View>
-        </Pressable>
-      </View>
-
-      <View style={styles.selectionFooter}>
-        <View style={styles.moderationNotice}>
-          <Ionicons name="shield-checkmark" size={20} color="#FF6B6B" />
-          <Text style={styles.moderationText}>
-            All videos are reviewed before going live to ensure quality content
-          </Text>
+      <ScrollView 
+        contentContainerStyle={styles.selectionScrollContent}
+        showsVerticalScrollIndicator={false}
+      >
+        {/* Header */}
+        <View style={styles.selectionHeader}>
+          <Text style={styles.selectionTitle}>Create Content</Text>
+          <Text style={styles.selectionSubtitle}>Share your food experience with the world</Text>
         </View>
-      </View>
+
+        {/* Value Props */}
+        <View style={styles.valuePropsContainer}>
+          <View style={styles.valueProp}>
+            <Ionicons name="restaurant" size={24} color="#FF6B6B" />
+            <Text style={styles.valuePropText}>Share Dishes</Text>
+          </View>
+          <View style={styles.valueProp}>
+            <Ionicons name="people" size={24} color="#FF6B6B" />
+            <Text style={styles.valuePropText}>Build Community</Text>
+          </View>
+          <View style={styles.valueProp}>
+            <Ionicons name="flame" size={24} color="#FF6B6B" />
+            <Text style={styles.valuePropText}>Get Inspired</Text>
+          </View>
+        </View>
+
+        {/* Main CTA */}
+        <Pressable style={styles.videoSelector} onPress={pickVideo}>
+          <View style={styles.videoSelectorIconContainer}>
+            <View style={styles.videoSelectorIcon}>
+              <Ionicons name="videocam" size={56} color="#FF6B6B" />
+            </View>
+            <PulseIcon />
+          </View>
+          <Text style={styles.videoSelectorTitle}>Upload Your Video</Text>
+          <Text style={styles.videoSelectorSubtitle}>Choose from your camera roll</Text>
+        </Pressable>
+
+        {/* Quality Assurance */}
+        <View style={styles.moderationNotice}>
+          <Ionicons name="shield-checkmark" size={24} color="#FF6B6B" />
+          <View style={styles.moderationTextContainer}>
+            <Text style={styles.moderationTitle}>Verified Community</Text>
+            <Text style={styles.moderationText}>
+              All videos are reviewed to ensure quality content for our community
+            </Text>
+          </View>
+        </View>
+      </ScrollView>
     </View>
   );
 
@@ -791,15 +859,17 @@ const styles = StyleSheet.create({
   // Video Selection Screen
   selectionScreen: {
     flex: 1,
-    justifyContent: 'space-between',
+  },
+  selectionScrollContent: {
+    padding: 20,
+    paddingBottom: 40,
   },
   selectionHeader: {
     alignItems: 'center',
-    paddingTop: 40,
-    paddingHorizontal: 20,
+    marginBottom: 32,
   },
   selectionTitle: {
-    fontSize: 32,
+    fontSize: 36,
     fontWeight: 'bold',
     color: '#333',
     marginBottom: 8,
@@ -809,33 +879,63 @@ const styles = StyleSheet.create({
     color: '#666',
     textAlign: 'center',
   },
-  selectionContent: {
-    flex: 1,
-    justifyContent: 'center',
-    paddingHorizontal: 20,
+  valuePropsContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    marginBottom: 32,
+    paddingVertical: 20,
+  },
+  valueProp: {
+    alignItems: 'center',
+    gap: 8,
+  },
+  valuePropText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#333',
+    textAlign: 'center',
   },
   videoSelector: {
-    backgroundColor: '#f8f9fa',
-    borderRadius: 20,
-    padding: 40,
+    backgroundColor: '#fff',
+    borderRadius: 24,
+    padding: 32,
     alignItems: 'center',
     borderWidth: 2,
-    borderColor: '#e9ecef',
-    borderStyle: 'dashed',
+    borderColor: '#FF6B6B',
+    marginBottom: 24,
+    shadowColor: '#FF6B6B',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 12,
+    elevation: 8,
+  },
+  videoSelectorIconContainer: {
+    position: 'relative',
+    marginBottom: 24,
   },
   videoSelectorIcon: {
-    width: 120,
-    height: 120,
-    borderRadius: 60,
+    width: 110,
+    height: 110,
+    borderRadius: 55,
     backgroundColor: '#fff',
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 24,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
+    shadowColor: '#FF6B6B',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
     shadowRadius: 8,
     elevation: 4,
+    borderWidth: 3,
+    borderColor: '#FF6B6B',
+  },
+  pulseRing: {
+    position: 'absolute',
+    width: 110,
+    height: 110,
+    borderRadius: 55,
+    borderWidth: 2,
+    borderColor: '#FF6B6B',
+    opacity: 0.3,
   },
   videoSelectorTitle: {
     fontSize: 24,
@@ -849,31 +949,40 @@ const styles = StyleSheet.create({
     marginBottom: 24,
   },
   videoRequirements: {
+    width: '100%',
+    gap: 12,
+  },
+  requirementItem: {
+    flexDirection: 'row',
     alignItems: 'center',
+    gap: 8,
   },
   requirementText: {
     fontSize: 14,
     color: '#666',
-    marginBottom: 4,
-  },
-  selectionFooter: {
-    paddingHorizontal: 20,
-    paddingBottom: 20,
   },
   moderationNotice: {
     flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'flex-start',
     backgroundColor: '#fff5f5',
-    padding: 16,
-    borderRadius: 12,
-    borderLeftWidth: 4,
-    borderLeftColor: '#FF6B6B',
+    padding: 20,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: '#FFE0E0',
+  },
+  moderationTextContainer: {
+    flex: 1,
+    marginLeft: 12,
+  },
+  moderationTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#333',
+    marginBottom: 4,
   },
   moderationText: {
-    flex: 1,
     fontSize: 14,
     color: '#666',
-    marginLeft: 12,
     lineHeight: 20,
   },
   // Video Details Screen
