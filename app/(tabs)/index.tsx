@@ -1,6 +1,6 @@
 import VideoPost from '@/components/VideoPost';
 import EndOfFeedCard from '@/components/EndOfFeedCard';
-import { View, Text, StyleSheet, FlatList, AppState, RefreshControl  } from 'react-native';
+import { View, Text, StyleSheet, FlatList, AppState, RefreshControl, Modal, TouchableOpacity  } from 'react-native';
 import { useState, useRef, useEffect, useCallback } from 'react';
 // COMMENTED OUT: Gesture handler imports since we're not using swipe anymore
 // import { GestureHandlerRootView, Gesture, GestureDetector } from 'react-native-gesture-handler';
@@ -13,6 +13,8 @@ import { useFocusEffect } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import NeighborhoodBadge from '@/components/NeighborhoodBadge';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { BlurView } from 'expo-blur';
+import { LinearGradient } from 'expo-linear-gradient';
 
 export default function Tab() {
   const insets = useSafeAreaInsets();
@@ -25,6 +27,7 @@ export default function Tab() {
   const [hasReachedEnd, setHasReachedEnd] = useState(false);
   const [offset, setOffset] = useState(0);
   const [feedSeed, setFeedSeed] = useState(Math.random());
+  const [showNeighborhoodModal, setShowNeighborhoodModal] = useState(false);
 
   const shouldPlay = isFocused && isAppActive;
 
@@ -268,7 +271,9 @@ export default function Tab() {
   return (
     <View style={styles.container}>
       <View style={[styles.badgeContainer, { top: Math.max(insets.top + 8, 16) }]} pointerEvents="box-none">
-        <NeighborhoodBadge label="University District" />
+        <TouchableOpacity onPress={() => setShowNeighborhoodModal(true)}>
+          <NeighborhoodBadge label="University District" />
+        </TouchableOpacity>
       </View>
       <FlatList
       data={feedData} 
@@ -303,6 +308,52 @@ export default function Tab() {
       windowSize={5}
       initialNumToRender={2}
     />
+    
+    {/* Neighborhood Modal */}
+    <Modal
+      visible={showNeighborhoodModal}
+      transparent
+      animationType="fade"
+      onRequestClose={() => setShowNeighborhoodModal(false)}
+    >
+      <TouchableOpacity 
+        style={styles.modalOverlay}
+        activeOpacity={1}
+        onPress={() => setShowNeighborhoodModal(false)}
+      >
+        <View style={styles.modalContentContainer} pointerEvents="box-none">
+          <TouchableOpacity 
+            activeOpacity={1}
+            onPress={(e) => e.stopPropagation()}
+          >
+            <View style={styles.liquidGlassModal}>
+              <LinearGradient
+                colors={["rgba(255,255,255,0.12)", "rgba(255,255,255,0.04)"]}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                style={styles.modalGradient}
+              />
+              <BlurView intensity={25} tint="dark" style={styles.modalBlur} />
+              
+              <View style={styles.modalContent}>
+                <Ionicons name="location" size={32} color="white" style={styles.modalIcon} />
+                <Text style={styles.modalTitle}>University District</Text>
+                <Text style={styles.modalMessage}>
+                  We're currently focused on the University District! 
+                  More neighborhoods coming soon. 🎉
+                </Text>
+                <TouchableOpacity 
+                  style={styles.modalButton}
+                  onPress={() => setShowNeighborhoodModal(false)}
+                >
+                  <Text style={styles.modalButtonText}>Got it</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </TouchableOpacity>
+        </View>
+      </TouchableOpacity>
+    </Modal>
     </View>
   );
 };
@@ -352,5 +403,64 @@ const styles = StyleSheet.create({
     color: 'rgba(255,255,255,0.4)',
     textAlign: 'center',
     fontStyle: 'italic',
+  },
+  // Neighborhood Modal Styles
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalContentContainer: {
+    width: '85%',
+    maxWidth: 320,
+  },
+  liquidGlassModal: {
+    borderRadius: 24,
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.1)',
+  },
+  modalGradient: {
+    ...StyleSheet.absoluteFillObject,
+    borderRadius: 24,
+  },
+  modalBlur: {
+    ...StyleSheet.absoluteFillObject,
+    borderRadius: 24,
+  },
+  modalContent: {
+    padding: 28,
+    alignItems: 'center',
+  },
+  modalIcon: {
+    marginBottom: 16,
+  },
+  modalTitle: {
+    fontSize: 24,
+    fontWeight: '700',
+    color: 'white',
+    marginBottom: 12,
+    textAlign: 'center',
+  },
+  modalMessage: {
+    fontSize: 16,
+    color: 'rgba(255,255,255,0.9)',
+    textAlign: 'center',
+    lineHeight: 24,
+    marginBottom: 24,
+  },
+  modalButton: {
+    backgroundColor: 'rgba(255,255,255,0.15)',
+    paddingVertical: 14,
+    paddingHorizontal: 32,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.2)',
+  },
+  modalButtonText: {
+    color: 'white',
+    fontSize: 16,
+    fontWeight: '600',
   },
 });
