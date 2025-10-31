@@ -545,13 +545,13 @@ useEffect(() => {
     // Trigger haptic feedback
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     
-    // Show heart animation
+    // Show heart animation - faster
     setShowLikeAnimation(true);
-    setTimeout(() => setShowLikeAnimation(false), 1000);
+    setTimeout(() => setShowLikeAnimation(false), 400);
     
-    // Like the post if not already liked
+    // Like the post if not already liked (skip haptics since double-tap already triggered it)
     if (!isLiked) {
-      await toggleLike();
+      await toggleLike(true);
     }
   };
 
@@ -645,7 +645,7 @@ useEffect(() => {
     }
   }
 
-  const toggleLike = async () => {
+  const toggleLike = async (skipHaptics = false) => {
     try {
       console.log('toggleLike called');
       const { data: { user } } = await supabase.auth.getUser();
@@ -658,8 +658,14 @@ useEffect(() => {
 
       if (isLiked) {
         console.log('Unliking post');
-        // Haptic feedback for unlike (lighter)
-        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+        // Haptic feedback for unlike (lighter) - IMMEDIATE
+        if (!skipHaptics) {
+          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+        }
+        
+        // Optimistic UI update - IMMEDIATE
+        setIsLiked(false);
+        setLikeCount(prev => prev - 1);
         
         // Unlike
         const { error } = await supabase
@@ -669,8 +675,6 @@ useEffect(() => {
           .eq('post_id', post.id);
 
         if (!error) {
-          setIsLiked(false);
-          setLikeCount(prev => prev - 1);
           console.log('Successfully unliked');
           
           // Track unlike event
@@ -681,11 +685,20 @@ useEffect(() => {
           });
         } else {
           console.error('Error unliking:', error);
+          // Revert optimistic update on error
+          setIsLiked(true);
+          setLikeCount(prev => prev + 1);
         }
       } else {
         console.log('Liking post');
-        // Haptic feedback for like (medium - only if not from double-tap)
-        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+        // Haptic feedback for like (medium) - IMMEDIATE
+        if (!skipHaptics) {
+          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+        }
+        
+        // Optimistic UI update - IMMEDIATE
+        setIsLiked(true);
+        setLikeCount(prev => prev + 1);
         
         // Like with upsert to handle duplicates gracefully
         const { error } = await supabase
@@ -699,8 +712,6 @@ useEffect(() => {
           );
 
         if (!error) {
-          setIsLiked(true);
-          setLikeCount(prev => prev + 1);
           console.log('Successfully liked');
           
           // Track like event
@@ -711,10 +722,21 @@ useEffect(() => {
           });
         } else {
           console.error('Error liking:', error);
+          // Revert optimistic update on error
+          setIsLiked(false);
+          setLikeCount(prev => prev - 1);
         }
       }
     } catch (error) {
       console.error('Error toggling like:', error);
+      // Revert optimistic update on error
+      if (isLiked) {
+        setIsLiked(false);
+        setLikeCount(prev => prev - 1);
+      } else {
+        setIsLiked(true);
+        setLikeCount(prev => prev + 1);
+      }
     }
   }
 
@@ -943,13 +965,13 @@ useEffect(() => {
             {/* Like button */}
             <TouchableOpacity 
               style={styles.actionButton} 
-              onPress={toggleLike}
+              onPress={() => toggleLike()}
               activeOpacity={0.7}
               pointerEvents="auto"
             >
               <Ionicons 
                 name={isLiked ? "heart" : "heart-outline"} 
-                size={24} 
+                size={28} 
                 color={isLiked ? Colors.primary : "white"} 
               />
               {likeCount > 0 && (
@@ -966,7 +988,7 @@ useEffect(() => {
             >
               <Ionicons 
                 name="chatbubble-outline" 
-                size={24} 
+                size={28} 
                 color="white" 
               />
               {commentCount > 0 && (
@@ -983,7 +1005,7 @@ useEffect(() => {
             >
               <Ionicons 
                 name={isSaved ? "bookmark" : "bookmark-outline"} 
-                size={24} 
+                size={28} 
                 color={isSaved ? Colors.secondary : "white"} 
               />
               {saveCount > 0 && (
@@ -998,7 +1020,7 @@ useEffect(() => {
               activeOpacity={0.7}
               pointerEvents="auto"
             >
-              <Ionicons name="share-outline" size={24} color="white" />
+              <Ionicons name="share-outline" size={28} color="white" />
             </TouchableOpacity>
             
             {/* Report button */}
@@ -1008,7 +1030,7 @@ useEffect(() => {
               activeOpacity={0.7}
               pointerEvents="auto"
             >
-              <Ionicons name="ellipsis-horizontal" size={24} color="white" />
+              <Ionicons name="ellipsis-horizontal" size={28} color="white" />
             </TouchableOpacity>
           </View>
         </View>
@@ -1105,15 +1127,13 @@ const styles = StyleSheet.create({
     top: '50%',
   },
   actionButton: {
-    backgroundColor: 'rgba(0, 0, 0, 0.6)',
-    width: 44,
-    height: 44,
-    borderRadius: 22,
+    width: 50,
+    height: 50,
     justifyContent: 'center',
     alignItems: 'center',
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.3)',
     marginBottom: 10,
+    paddingVertical: 10,
+    paddingHorizontal: 10,
   },
   actionCount: {
     color: 'white',
