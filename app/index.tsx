@@ -21,6 +21,7 @@ export default function Index() {
   //supabase logic
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [loading, setLoading] = useState(false);
 
   // Check if user is already logged in and redirect appropriately
@@ -51,6 +52,10 @@ export default function Index() {
     setLoading(false);
   }
   async function signUpWithEmail() {
+    if (password !== confirmPassword) {
+      Alert.alert('Passwords do not match', 'Please make sure both password fields are the same.');
+      return;
+    }
     setLoading(true);
     const {
       data: { session },
@@ -111,6 +116,9 @@ export default function Index() {
     setShowRegistrationOptions(false);
     setShowEmailForm(false);
     setIsRegistering(false);
+    setEmail('');
+    setPassword('');
+    setConfirmPassword('');
   }
 
   const emailLoginHandler = () => {
@@ -132,6 +140,7 @@ export default function Index() {
     setShowForgotPassword(false);
     setEmail('');
     setPassword('');
+    setConfirmPassword('');
   }
 
   const forgotPasswordHandler = () => {
@@ -147,6 +156,9 @@ export default function Index() {
     setShowLoginOptions(false);
     setShowEmailForm(false);
     setIsRegistering(false);
+    setEmail('');
+    setPassword('');
+    setConfirmPassword('');
   }
 
   const emailRegisterHandler = () => {
@@ -288,34 +300,48 @@ export default function Index() {
             </View>
           ) : (
             <>
-              {!showRegistrationOptions && !showLoginOptions ? (
-                <View style={styles.initialWrapper}>
-                  <Text style={styles.initialTitle}>Log in to Crave</Text>
-                  <View style={styles.buttonContainer}>
-                    <Pressable style={styles.button} onPress={loginHandler}>
-                      <Text style={styles.buttonText}>LOG IN</Text>
-                    </Pressable>
-                  </View>
-                  <View style={styles.buttonContainer}>
-                    <Pressable style={styles.button} onPress={registerHandler}>
-                      <Text style={styles.buttonText}>SIGN UP</Text>
-                    </Pressable>
-                  </View>
-                </View>
-              ) : showRegistrationOptions ? (
+              {!showLoginOptions ? (
                 <>
-                  <View style={[styles.bottomContainer, styles.buttonContainer]}>
-                    <View style={styles.optionsHeader}>
-                      <Pressable style={styles.optionsBackButton} onPress={backToMainHandler}>
-                        <Ionicons name="arrow-back" size={24} color={Colors.textInverse} />
-                      </Pressable>
-                      <Text style={styles.registrationTitle}>Sign Up for Crave</Text>
-                      <View style={{ width: 24 }} />
-                    </View>
+                  <View style={styles.signupScreen}>
+                    <Text style={styles.signupTitle}>Sign Up for Crave</Text>
                     
-                    <Pressable style={styles.button} onPress={emailRegisterHandler}>
-                      <Ionicons name="mail-outline" size={20} color={Colors.textInverse} style={styles.buttonIcon} />
-                      <Text style={styles.buttonText}>Continue with Email</Text>
+                    <TextInput 
+                      placeholder="Email" 
+                      placeholderTextColor={Colors.textSecondary} 
+                      style={styles.signupInput}
+                      onChangeText={(text) => setEmail(text)}
+                      value={email}
+                      autoCapitalize="none"
+                      keyboardType="email-address"
+                    />
+                    
+                    <TextInput 
+                      placeholder="Password"  
+                      placeholderTextColor={Colors.textSecondary} 
+                      style={styles.signupInput}
+                      onChangeText={(text) => setPassword(text)}
+                      value={password}
+                      secureTextEntry={true}
+                      autoCapitalize="none"
+                    />
+                    
+                    <TextInput 
+                      placeholder="Confirm Password"  
+                      placeholderTextColor={Colors.textSecondary} 
+                      style={styles.signupInput}
+                      onChangeText={(text) => setConfirmPassword(text)}
+                      value={confirmPassword}
+                      secureTextEntry={true}
+                      autoCapitalize="none"
+                    />
+                    
+                    <Pressable 
+                      style={styles.signupButton} 
+                      onPress={signUpWithEmail}
+                    >
+                      <Text style={styles.signupButtonText}>
+                        {loading ? 'Loading...' : 'Create Account'}
+                      </Text>
                     </Pressable>
                     
                     <View style={styles.appleButtonContainer}>
@@ -332,18 +358,36 @@ export default function Index() {
                 </>
               ) : (
                 <>
-                  <View style={[styles.bottomContainer, styles.buttonContainer]}>
-                    <View style={styles.optionsHeader}>
-                      <Pressable style={styles.optionsBackButton} onPress={backToMainFromLoginHandler}>
-                        <Ionicons name="arrow-back" size={24} color={Colors.textInverse} />
-                      </Pressable>
-                      <Text style={styles.registrationTitle}>Log in to Crave</Text>
-                      <View style={{ width: 24 }} />
-                    </View>
+                  <View style={styles.signupScreen}>
+                    <Text style={styles.signupTitle}>Log in to Crave</Text>
                     
-                    <Pressable style={styles.button} onPress={emailLoginHandler}>
-                      <Ionicons name="mail-outline" size={20} color={Colors.textInverse} style={styles.buttonIcon} />
-                      <Text style={styles.buttonText}>Continue with Email</Text>
+                    <TextInput 
+                      placeholder="Email" 
+                      placeholderTextColor={Colors.textSecondary} 
+                      style={styles.signupInput}
+                      onChangeText={(text) => setEmail(text)}
+                      value={email}
+                      autoCapitalize="none"
+                      keyboardType="email-address"
+                    />
+                    
+                    <TextInput 
+                      placeholder="Password"  
+                      placeholderTextColor={Colors.textSecondary} 
+                      style={styles.signupInput}
+                      onChangeText={(text) => setPassword(text)}
+                      value={password}
+                      secureTextEntry={true}
+                      autoCapitalize="none"
+                    />
+                    
+                    <Pressable 
+                      style={styles.signupButton} 
+                      onPress={signInWithEmail}
+                    >
+                      <Text style={styles.signupButtonText}>
+                        {loading ? 'Loading...' : 'Log In'}
+                      </Text>
                     </Pressable>
                     
                     <View style={styles.appleButtonContainer}>
@@ -623,6 +667,7 @@ const styles = StyleSheet.create({
   appleButtonContainer: {
     marginHorizontal: 20,
     marginVertical: 10,
+    alignItems: 'center',
   },
   loginFooter: {
     position: 'absolute',
@@ -649,5 +694,42 @@ const styles = StyleSheet.create({
     color: Colors.primary,
     fontWeight: '600',
     marginBottom: 20,
+  },
+  signupScreen: {
+    flex: 1,
+    paddingTop: 120,
+    paddingHorizontal: 20,
+  },
+  signupTitle: {
+    fontSize: 28,
+    fontWeight: 'bold',
+    color: Colors.text,
+    textAlign: 'center',
+    marginBottom: 40,
+  },
+  signupInput: {
+    height: 55,
+    backgroundColor: Colors.surface,
+    borderRadius: 16,
+    paddingHorizontal: 20,
+    marginBottom: 16,
+    fontSize: 16,
+    color: Colors.text,
+    borderWidth: 1,
+    borderColor: Colors.border,
+  },
+  signupButton: {
+    backgroundColor: Colors.primary,
+    height: 55,
+    borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 8,
+    marginBottom: 20,
+  },
+  signupButtonText: {
+    color: Colors.textInverse,
+    fontSize: 18,
+    fontWeight: 'bold',
   },
 });
